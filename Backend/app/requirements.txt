@@ -1,0 +1,10 @@
+
+fastapi[standard]
+uvicorn
+# python-jose[cryptography]
+# passlib[bcrypt]
+fastapi-users[sqlalchemy]
+python-multipart
+requests
+python-dotenv
+motor

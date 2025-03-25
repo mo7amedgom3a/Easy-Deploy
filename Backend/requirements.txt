@@ -1,0 +1,10 @@
+SQLModel
+fastapi[standard]
+uvicorn
+# python-jose[cryptography]
+# passlib[bcrypt]
+fastapi-users[sqlalchemy]
+aiosqlite
+# python-multipart
+# requests
+# python-dotenv
