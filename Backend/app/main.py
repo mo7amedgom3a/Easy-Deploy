@@ -10,7 +10,7 @@ async def startup_db_client():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    app.state.db_client.close()
+    await DatabaseConnection().close()
 
 app.include_router(user.router)
 

@@ -1,8 +1,18 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class User(BaseModel):
-    id: str
+    id: Optional[str] = None
     name: str
-    age: int
-    phone: str
     email: str
+    password: str
+
+class UserCreate(User):
+    password: str
+
+class UserUpdate(User):
+    password: Optional[str] = None
+
+
+class UserInDB(User):
+    hashed_password: str

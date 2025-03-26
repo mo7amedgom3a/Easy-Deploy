@@ -1,6 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel
 
 class User(BaseModel):
     id: str
@@ -8,6 +6,5 @@ class User(BaseModel):
     age: int
     phone: str
     email: str
-    
 
 

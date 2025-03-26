@@ -1,36 +1,46 @@
-from typing import List, Optional
-from motor.motor_asyncio import AsyncIOMotorClient
-from fastapi import Depends
-from models.user import User
-from interfaces.user_interface import UserRepository
+from interfaces.user_interface import UserRepository as UserRepositoryInterface
+from schemas.user_schema import User, UserCreate, UserUpdate
+from bson import ObjectId
 from dependencies.database_connection import DatabaseConnection
 
-class UserRepository(UserRepository):
-    def __init__(self, db: AsyncIOMotorClient = Depends(DatabaseConnection().get_database)):
-        self.db = db.client["users_db"]
-        self.collection = self.db["users"]
+class UserRepository(UserRepositoryInterface):
+    def __init__(self, db: DatabaseConnection):
+        self.db = db
 
-    async def create(self, user: User) -> User:
-        user_dict = user.dict()
-        result = await self.collection.insert_one(user_dict)
+    def _user_to_dict(self, user: User) -> dict:
+        return {
+            "id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "password": user.password
+        }
+    
+    async def create(self, user: UserCreate) -> User:
+        user_dict = self._user_to_dict(user)
+        collection = await self.db.get_collection("users")
+        result = await collection.insert_one(user_dict)
         user_dict["id"] = str(result.inserted_id)
         return User(**user_dict)
 
-    async def get_by_id(self, user_id: str) -> Optional[User]:
-        from bson import ObjectId
-        try:
-            user = await self.collection.find_one({"_id": ObjectId(user_id)})
-            if user:
-                user["id"] = str(user.pop("_id"))
-                return User(**user)
-            return None
-        except:
-            return None
+    async def get_by_id(self, user_id: str) -> User:
+        collection = await self.db.get_collection("users")
+        user_data = await collection.find_one({"_id": ObjectId(user_id)})
+        if user_data:
+            return User(**user_data)
+        return None
 
-    async def get_all(self) -> List[User]:
-        users = []
-        cursor = self.collection.find({})
-        async for document in cursor:
-            document["id"] = str(document.pop("_id"))
-            users.append(User(**document))
-        return users
+    async def get_by_email(self, email: str) -> User:
+        collection = await self.db.get_collection("users")
+        user_data = await collection.find_one({"email": email})
+        if user_data:
+            return User(**user_data)
+        return None
+    
+    async def update(self, user: UserUpdate) -> User:
+        user_dict = self._user_to_dict(user)
+        collection = await self.db.get_collection("users")
+        result = await collection.update_one(
+            {"_id": ObjectId(user.id)},
+            {"$set": user_dict}
+        )
+        return User(**user_dict)

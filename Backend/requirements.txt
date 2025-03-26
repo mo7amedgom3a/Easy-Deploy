@@ -1,10 +1,8 @@
-SQLModel
 fastapi[standard]
 uvicorn
-# python-jose[cryptography]
-# passlib[bcrypt]
+python-dotenv
+pydantic
 fastapi-users[sqlalchemy]
-aiosqlite
-# python-multipart
-# requests
-# python-dotenv
+python-multipart
+requests
+motor # for async mongo db
