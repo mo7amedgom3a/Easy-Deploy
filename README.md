@@ -39,7 +39,9 @@ Easy Deploy is a full-stack application that simplifies the deployment process. 
     DATABASE_URL=your_database_url
     ```
 
-5. Run the FastAPI application:
+    Create the file if it doesn't already exist.
+
+6. Run the FastAPI application:
 
     ```bash
     uvicorn main:app --reload
@@ -81,7 +83,9 @@ To deploy the application, you will need to containerize the backend and fronten
     docker push frontend:latest
     ```
 
-3. Deploy the application to a cloud platform using Docker Compose or Kubernetes. Here is an example `docker-compose.yml` file:
+    Make sure the image names correspond to the names used when pushing to the container registry.
+
+4. Deploy the application to a cloud platform using Docker Compose or Kubernetes. Here is an example `docker-compose.yml` file:
 
     ```yaml
     version: "3.9"
@@ -153,7 +157,9 @@ We welcome contributions to the project! Here are the steps to contribute:
     NEXT_PUBLIC_API_URL=your_api_url
     ```
 
-4. Run the Next.js application:
+    Create the file if it doesn't already exist.
+
+5. Run the Next.js application:
 
     ```bash
     npm run dev
