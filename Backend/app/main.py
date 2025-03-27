@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import uvicorn
 from routers import user
+import os
+from dotenv import load_dotenv
 from dependencies.database_connection import DatabaseConnection
 
 app = FastAPI()
@@ -15,4 +17,5 @@ async def shutdown_db_client():
 app.include_router(user.router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    load_dotenv()
+    uvicorn.run(app, host=os.getenv("HOST"), port=os.getenv("PORT"))
