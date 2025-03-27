@@ -68,7 +68,8 @@ SECRET_KEY=your_secret_key
 ### Local Development
 
 ```bash
-uvicorn app.main:app --reload
+cd app
+uvicorn main:app --reload
 or
 fastapi run dev
 ```
