@@ -36,7 +36,9 @@ Easy Deploy is a full-stack application that simplifies the deployment process. 
     Create a `.env` file in the `Backend/app` directory and add any necessary environment variables. For example:
 
     ```bash
-    DATABASE_URL=your_database_url
+    CONNECTION_STRING=your_database_url
+    DATABASE_NAME=
+    COLLECTION_NAME=
     ```
 
     Create the file if it doesn't already exist.
