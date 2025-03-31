@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col mx-auto">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-2 font-bold text-xl">
             <Rocket className="h-6 w-6" />
-            <span>DeployWave</span>
+            <span>Easy Deploy</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4">
@@ -36,7 +36,7 @@ export default function Home() {
       </header>
       <main className="flex-1">
         {/* Hero Section with Background Image */}
-        <section className="relative min-h-[90vh] flex items-center">
+        <section className="relative min-h-[100vh] flex items-center">
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <Image
