@@ -1,10 +1,9 @@
-import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CheckCircle2, Clock, ExternalLink, RotateCcw, XCircle } from "lucide-react"
 
-export function RecentDeployments() {
+export function DeploymentHistory() {
   return (
     <div className="relative w-full overflow-auto">
       <Table>
@@ -14,6 +13,7 @@ export function RecentDeployments() {
             <TableHead>Status</TableHead>
             <TableHead>Branch</TableHead>
             <TableHead>Commit</TableHead>
+            <TableHead>Author</TableHead>
             <TableHead>Time</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -21,11 +21,7 @@ export function RecentDeployments() {
         <TableBody>
           {deployments.map((deployment) => (
             <TableRow key={deployment.id}>
-              <TableCell className="font-medium">
-                <Link href={`/dashboard/projects/${deployment.id}`} className="hover:underline">
-                  {deployment.project}
-                </Link>
-              </TableCell>
+              <TableCell className="font-medium">{deployment.project}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   {deployment.status === "success" && (
@@ -56,20 +52,17 @@ export function RecentDeployments() {
               </TableCell>
               <TableCell>{deployment.branch}</TableCell>
               <TableCell className="font-mono text-xs">{deployment.commit.substring(0, 7)}</TableCell>
+              <TableCell>{deployment.author}</TableCell>
               <TableCell>{deployment.time}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                    <Link href={`/dashboard/deployments/${deployment.id}`}>
-                      <ExternalLink className="h-4 w-4" />
-                      <span className="sr-only">View deployment</span>
-                    </Link>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <ExternalLink className="h-4 w-4" />
+                    <span className="sr-only">View deployment</span>
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                    <Link href={`/dashboard/deployments/${deployment.id}/redeploy`}>
-                      <RotateCcw className="h-4 w-4" />
-                      <span className="sr-only">Redeploy</span>
-                    </Link>
+                  <Button variant="outline" size="icon" className="h-8 w-8">
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="sr-only">Redeploy</span>
                   </Button>
                 </div>
               </TableCell>
@@ -88,6 +81,7 @@ const deployments = [
     status: "success",
     branch: "main",
     commit: "a1b2c3d4e5f6g7h8i9j0",
+    author: "John Doe",
     time: "2 minutes ago",
   },
   {
@@ -96,6 +90,7 @@ const deployments = [
     status: "failed",
     branch: "feature/auth",
     commit: "b2c3d4e5f6g7h8i9j0k1",
+    author: "Sarah Johnson",
     time: "15 minutes ago",
   },
   {
@@ -104,6 +99,7 @@ const deployments = [
     status: "success",
     branch: "main",
     commit: "c3d4e5f6g7h8i9j0k1l2",
+    author: "Mike Chen",
     time: "1 hour ago",
   },
   {
@@ -112,6 +108,7 @@ const deployments = [
     status: "building",
     branch: "develop",
     commit: "d4e5f6g7h8i9j0k1l2m3",
+    author: "Emily Wilson",
     time: "just now",
   },
   {
@@ -120,7 +117,35 @@ const deployments = [
     status: "success",
     branch: "main",
     commit: "e5f6g7h8i9j0k1l2m3n4",
+    author: "Alex Rodriguez",
     time: "3 hours ago",
+  },
+  {
+    id: "6",
+    project: "Analytics Service",
+    status: "failed",
+    branch: "feature/reports",
+    commit: "f6g7h8i9j0k1l2m3n4o5",
+    author: "Lisa Taylor",
+    time: "5 hours ago",
+  },
+  {
+    id: "7",
+    project: "User Authentication",
+    status: "success",
+    branch: "main",
+    commit: "g7h8i9j0k1l2m3n4o5p6",
+    author: "David Rodriguez",
+    time: "1 day ago",
+  },
+  {
+    id: "8",
+    project: "Payment Gateway",
+    status: "success",
+    branch: "main",
+    commit: "h8i9j0k1l2m3n4o5p6q7",
+    author: "Emma Thompson",
+    time: "2 days ago",
   },
 ]
 
