@@ -148,7 +148,7 @@ We welcome contributions to the project! Here are the steps to contribute:
 2. Install dependencies:
 
     ```bash
-    npm install
+    pnpm install
     ```
 
 3. Configure environment variables:
