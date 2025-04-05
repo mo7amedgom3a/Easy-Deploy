@@ -247,12 +247,12 @@ export function SidebarHeader({ children }: { children: React.ReactNode }) {
       ) : (
         <div className="flex items-center justify-center">
           {React.Children.map(children, (child) => {
-            if (React.isValidElement(child) && child.type === "div") {
+    if (React.isValidElement(child) && child.type === "div") {
       const firstChild = React.Children.toArray((child.props as React.HTMLAttributes<HTMLDivElement>).children)[0]
-              if (React.isValidElement(firstChild)) {
-                return React.cloneElement(firstChild)
-              }
-            }
+      if (React.isValidElement(firstChild)) {
+        return React.cloneElement(firstChild)
+      }
+    }
             return null
           })}
         </div>
@@ -576,7 +576,7 @@ const SidebarMenuSkeleton = React.forwardRef<
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
+    return `75%`
   }, [])
 
   return (
@@ -670,4 +670,3 @@ export {
   SidebarRail,
   SidebarTrigger,
 }
-
