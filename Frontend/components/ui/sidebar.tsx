@@ -248,7 +248,7 @@ export function SidebarHeader({ children }: { children: React.ReactNode }) {
         <div className="flex items-center justify-center">
           {React.Children.map(children, (child) => {
             if (React.isValidElement(child) && child.type === "div") {
-              const firstChild = React.Children.toArray(child.props.children)[0]
+      const firstChild = React.Children.toArray((child.props as React.HTMLAttributes<HTMLDivElement>).children)[0]
               if (React.isValidElement(firstChild)) {
                 return React.cloneElement(firstChild)
               }
