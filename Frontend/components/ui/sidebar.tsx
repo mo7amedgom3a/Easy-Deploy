@@ -365,7 +365,7 @@ export function SidebarMenuSub({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       {React.Children.map(children, (child, index) => {
-        if (index === 0) {
+        if (index === 0 && React.isValidElement(child) && child.type === SidebarMenuSubButton) {
           return React.cloneElement(child as React.ReactElement, {
             onClick: () => setExpanded(!expanded),
             expanded,
