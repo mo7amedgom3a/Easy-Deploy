@@ -46,7 +46,7 @@ export default function Home() {
           </div>
         </div>
       </header>
-      <main className="flex-1 pt-16">
+      <main className="flex-1">
         {/* Hero Section with Background Image */}
         <section className="hero-section">
           {/* Background Image with blur animation */}
@@ -458,4 +458,3 @@ const testimonials = [
       "We've tried several deployment platforms, but DeployWave offers the perfect balance of simplicity and power for our team.",
   },
 ]
-
