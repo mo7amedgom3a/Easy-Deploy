@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Code, Github, GitMerge, Rocket, Server, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import UiverseButton from '@/components/ui/Uiverse-Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
@@ -40,9 +41,7 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" className="px-4 login-button" asChild>
-              <Link href="/login">Log in</Link>
-            </Button>
+            <UiverseButton />
           </div>
         </div>
       </header>
