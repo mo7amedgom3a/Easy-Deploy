@@ -33,7 +33,7 @@ export function DashboardSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2">
           <Rocket className="h-6 w-6" />
-          <span className="font-bold text-xl">DeployWave</span>
+          <span className="font-bold text-xl">Easy Deploy</span>
         </div>
       </SidebarHeader>
       <SidebarSeparator />

@@ -12,7 +12,7 @@ export default function Home() {
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl transition-colors hover:text-primary">
             <Rocket className="h-6 w-6" fill="#972c93" stroke="#972c93" />
-            <span className="hidden sm:inline text-[#972c93]">DeployWave</span>
+            <span className="hidden sm:inline text-[#972c93]">Easy Deploy</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 mx-4">
             <Link
@@ -257,7 +257,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2 font-bold text-xl mb-4">
                 <Rocket className="h-6 w-6" fill="#972c93" stroke="#972c93" />
-                <span>DeployWave</span>
+                <span>Easy Deploy</span>
               </div>
               <p className="text-muted-foreground">Simplifying DevOps for developers since 2023.</p>
             </div>
@@ -333,7 +333,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t text-center text-muted-foreground">
-            <p>© 2023 DeployWave. All rights reserved.</p>
+            <p>© 2023 Easy Deploy. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -424,13 +424,13 @@ const testimonials = [
     name: "Sarah Johnson",
     role: "Frontend Developer",
     quote:
-      "DeployWave has completely transformed our deployment process. What used to take hours now happens automatically with every push.",
+      "Easy Deploy has completely transformed our deployment process. What used to take hours now happens automatically with every push.",
   },
   {
     name: "Michael Chen",
     role: "CTO at StartupX",
     quote:
-      "We eliminated an entire DevOps position by switching to DeployWave. The ROI has been incredible for our small team.",
+      "We eliminated an entire DevOps position by switching to Easy Deploy. The ROI has been incredible for our small team.",
   },
   {
     name: "Jessica Williams",
@@ -442,18 +442,18 @@ const testimonials = [
     name: "David Rodriguez",
     role: "Lead Developer",
     quote:
-      "Our team's productivity increased by 30% after moving our deployment process to DeployWave. Highly recommended!",
+      "Our team's productivity increased by 30% after moving our deployment process to Easy Deploy. Highly recommended!",
   },
   {
     name: "Emma Thompson",
     role: "Indie Developer",
     quote:
-      "As a solo developer, I don't have time for complex DevOps. DeployWave lets me deploy professional-grade apps effortlessly.",
+      "As a solo developer, I don't have time for complex DevOps. Easy Deploy lets me deploy professional-grade apps effortlessly.",
   },
   {
     name: "Alex Patel",
     role: "Engineering Manager",
     quote:
-      "We've tried several deployment platforms, but DeployWave offers the perfect balance of simplicity and power for our team.",
+      "We've tried several deployment platforms, but Easy Deploy offers the perfect balance of simplicity and power for our team.",
   },
 ]

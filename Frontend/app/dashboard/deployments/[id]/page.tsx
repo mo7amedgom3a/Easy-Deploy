@@ -17,7 +17,7 @@ export default function DeploymentDetailsPage({ params }: { params: { id: string
     author: "John Doe",
     time: "2 hours ago",
     duration: "1m 45s",
-    url: "https://ecommerce-frontend-a1b2c3.deploywave.app",
+    url: "https://ecommerce-frontend-a1b2c3.Easy Deploy.app",
     logs: [
       { time: "12:01:23", message: "Build started" },
       { time: "12:01:25", message: "Installing dependencies" },
