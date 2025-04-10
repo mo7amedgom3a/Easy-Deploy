@@ -1,21 +1,21 @@
 from typing import List, Optional
-from schemas.user_schema import User, UserCreate, UserUpdate
+from schemas.user_schema import UserSchema
 from pydantic import BaseModel
 from abc import ABC, abstractmethod
 
-class UserRepository(ABC):
+class UserInterface(ABC):
     @abstractmethod
-    async def create(self, user: UserCreate) -> User:
+
+
+    async def get_by_id(self, user_id: str) -> UserSchema:
         pass
 
     @abstractmethod
-    async def get_by_id(self, user_id: str) -> User:
+    async def get_by_email(self, email: str) -> UserSchema:
         pass
 
-    @abstractmethod
-    async def get_by_email(self, email: str) -> User:
+    async def get_or_create_user(self, user_data: dict) -> UserSchema:
         pass
 
-    @abstractmethod
-    async def update(self, user: UserUpdate) -> User:
+    async def get_all(self) -> List[UserSchema]:
         pass

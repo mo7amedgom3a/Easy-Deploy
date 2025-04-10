@@ -1,7 +1,8 @@
 from fastapi import Depends
 from services.user import UserService
-from dependencies.repositories import get_user_repository
-from repositories.user import UserRepository
+from dependencies.user import get_user
+from repositories.user import User
 
-async def get_user_service(user_repository: UserRepository = Depends(get_user_repository)) -> UserService:
+async def get_user_service(user_repository: User = Depends(get_user)) -> UserService:
     return UserService(user_repository)
+

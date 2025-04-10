@@ -2,7 +2,7 @@
 # and return the repository instance
 from fastapi import Depends
 from dependencies.database_connection import DatabaseConnection
-from repositories.user import UserRepository
+from repositories.user import User
 
-async def get_user_repository(db: DatabaseConnection = Depends(DatabaseConnection)) -> UserRepository:
-    return UserRepository(db) 
+async def get_user(db: DatabaseConnection = Depends(DatabaseConnection)) -> User:
+    return User(db) 
