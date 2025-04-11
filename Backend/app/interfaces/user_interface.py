@@ -9,9 +9,7 @@ class UserInterface(ABC):
 
     async def get_by_id(self, user_id: str) -> UserSchema:
         pass
-
-    @abstractmethod
-    async def get_by_email(self, email: str) -> UserSchema:
+    async def get_user_by_github_id(self, github_id: str) -> UserSchema:
         pass
 
     async def get_or_create_user(self, user_data: dict) -> UserSchema:
