@@ -30,7 +30,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
     --navbar-bg: 215 30% 15%;
-    --navbar-text: 307 59% 39%;
+    --navbar-text: 221, 83%, 53%;
   }
 
   .dark {
@@ -59,7 +59,7 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --navbar-bg: 215 30% 12%;
-    --navbar-text: 210 40% 98%;
+    --navbar-text: 221, 40%, 98%;
 
     /* Dashboard accessories color */
     --dashboard-accent: 240 3% 10%;
@@ -107,7 +107,7 @@ aside {
 .site-navbar .login-button {
   background-color: transparent;
   border: 1px solid hsla(var(--navbar-text), 0.3);
-  color: hsl(var(--navbar-text));
+  color: hsl(221, 83%, 53%);
   transition: all 0.2s ease;
 }
 

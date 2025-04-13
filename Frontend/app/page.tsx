@@ -11,31 +11,31 @@ export default function Home() {
       <header className="fixed top-0 z-50 w-full site-navbar backdrop-blur supports-[backdrop-filter]:bg-opacity-80">
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl transition-colors hover:text-primary">
-            <Rocket className="h-6 w-6" fill="#972c93" stroke="#972c93" />
-            <span className="hidden sm:inline text-[#972c93]">Easy Deploy</span>
+            <Rocket className="h-6 w-6" fill="hsl(221, 83%, 53%)" stroke="hsl(221, 83%, 53%)" />
+            <span className="hidden sm:inline text-[hsl(221,83%,53%)]">Easy Deploy</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 mx-4">
             <Link
               href="#features"
-              className="text-sm font-medium text-[#972c93] hover:text-[#b33fae] transition-colors hover:underline underline-offset-4"
+              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
             >
               Features
             </Link>
             <Link
               href="#how-it-works"
-              className="text-sm font-medium text-[#972c93] hover:text-[#b33fae] transition-colors hover:underline underline-offset-4"
+              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
             >
               How It Works
             </Link>
             <Link
               href="#pricing"
-              className="text-sm font-medium text-[#972c93] hover:text-[#b33fae] transition-colors hover:underline underline-offset-4"
+              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
             >
               Pricing
             </Link>
             <Link
               href="#testimonials"
-              className="text-sm font-medium text-[#972c93] hover:text-[#b33fae] transition-colors hover:underline underline-offset-4"
+              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
             >
               Testimonials
             </Link>
@@ -256,8 +256,8 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 font-bold text-xl mb-4">
-                <Rocket className="h-6 w-6" fill="#972c93" stroke="#972c93" />
-                <span>Easy Deploy</span>
+                <Rocket className="h-6 w-6" fill="hsl(221, 83%, 53%)" stroke="hsl(221, 83%, 53%)" />
+                <span className="text-[hsl(221,83%,53%)]">Easy Deploy</span>
               </div>
               <p className="text-muted-foreground">Simplifying DevOps for developers since 2023.</p>
             </div>
