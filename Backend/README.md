@@ -1,4 +1,4 @@
-# Easy-Deploy Backend
+# Easy-Deploy-V.0.1 Backend
 
 A FastAPI-based backend service for the Easy-Deploy project, providing a robust and scalable API infrastructure.
 
