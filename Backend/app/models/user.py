@@ -8,7 +8,6 @@ class User(BaseModel):
     bio: Optional[str] = None
     access_token: Optional[str] = None
     repos_urls: Optional[list[str]] = None
-    email: str
     avatar_url: Optional[str] = None
 
     class Config:

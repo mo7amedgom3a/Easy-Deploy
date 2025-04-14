@@ -41,12 +41,10 @@ class User(UserInterface):
         user = await collection.find_one({"github_id": str(user_data.get("id"))})
         if not user:
             user = self.map_user_response_to_user(user_data)
-            user_data["_id"] = ObjectId()
-            user_data["access_token"] = self.hash_access_key(user_data["access_token"])
-            user_data["repos_urls"] = user_data.get("repos_url", "") or ""
-            user_data["email"] = user_data.get("email", "") or ""
-            user_data["login"] = user_data.get("login", "") or ""
-            await collection.insert_one(user_data)
+            user_dict = user.dict()
+            user_dict["_id"] = ObjectId()
+            user_dict["hashed_access_key"] = self.hash_access_key(user_dict["access_token"])
+            await collection.insert_one(user_dict)
             return user
         return UserSchema(**user)
            
