@@ -1,24 +1,24 @@
+"use client";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 
 const GitHubCallback = () => {
-  const router = useRouter();
+ 
 
   useEffect(() => {
     const fetchToken = async () => {
-      const code = router.query.code;
+      const code = window.location.search.split("=")[1];
 
       if (code) {
         try {
           const res = await fetch(
-            `http://127.0.0.1:8000/github/callback?code=${code}`
+            `http://127.0.0.1:8000/auth/github/callback?code=${code}`
           );
           const data = await res.json();
 
           if (data.jwt_token) {
             localStorage.setItem("token", data.jwt_token);
-            router.push("/dashboard"); // redirect to a protected page
-          } else {
+            window.location.href = "/dashboard";
             console.error("Login failed", data);
           }
         } catch (error) {
@@ -28,7 +28,7 @@ const GitHubCallback = () => {
     };
 
     fetchToken();
-  }, [router]);
+  }, []);
 
   return <div>Logging in...</div>;
 };
