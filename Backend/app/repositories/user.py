@@ -30,7 +30,7 @@ class User(UserInterface):
             login=user.get("login"),
             bio=user.get("bio"),
             access_token=user.get("access_token"),
-            repos_urls=[user.get("repos_url")] if user.get("repos_url") else [],
+            repos_urls=user.get("repos_url") if user.get("repos_url") else "",
             email=user.get("email", "") or "",
             avatar_url=user.get("avatar_url"),
         )
@@ -43,7 +43,7 @@ class User(UserInterface):
             user = self.map_user_response_to_user(user_data)
             user_data["_id"] = ObjectId()
             user_data["access_token"] = self.hash_access_key(user_data["access_token"])
-            user_data["repos_urls"] = user_data.get("repos_url", []) or []
+            user_data["repos_urls"] = user_data.get("repos_url", "") or ""
             user_data["email"] = user_data.get("email", "") or ""
             user_data["login"] = user_data.get("login", "") or ""
             await collection.insert_one(user_data)
