@@ -1,6 +1,8 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from config.settings import settings
+import logging
+logger = logging.getLogger('uvicorn.error')
 
 class DatabaseConnection:
     def __init__(self):
@@ -10,12 +12,13 @@ class DatabaseConnection:
 
     async def connect(self):
         try:
-            self.client = AsyncIOMotorClient(self.database_url, serverSelectionTimeoutMS=5000)
+            self.client = AsyncIOMotorClient(self.database_url)
             # Trigger a server selection to ensure connection
             await self.client.server_info()
-        except Exception:
-            # Fallback to local database
-            self.client = AsyncIOMotorClient(self.local_database_url)
+            await self.client.admin.command('ping')
+            print("Pinged your deployment. You successfully connected to MongoDB!")
+        except Exception as e:
+            logger.error(f"Error while connected to MongoDB: {e}")
     
     async def get_database(self):
         if not self.client:
