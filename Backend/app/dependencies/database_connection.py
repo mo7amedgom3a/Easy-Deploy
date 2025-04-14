@@ -1,5 +1,5 @@
 import asyncio
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient # type: ignore
 from config.settings import settings
 import logging
 logger = logging.getLogger('uvicorn.error')
