@@ -37,4 +37,4 @@ async def github_callback(request: Request, code: str, user_service: UserService
     token = create_access_token(data={"sub": user.github_id, "name": user.name, "access_key": user_data.get("access_token")})
     if not token:
         raise HTTPException(status_code=400, detail="Token creation failed")
-    return {"jwt_token": token, "token_type": "bearer", "user": user}
+    return {"jwt_token": token}

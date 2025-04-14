@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import './globals.css'
-
 export const metadata: Metadata = {
   title: 'Easy Deploy',
   description: 'Created with ❤️',
@@ -14,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body data-new-gr-c-s-check-loaded="8.929.0" data-gr-ext-installed="">{children}</body>
     </html>
   )
 }

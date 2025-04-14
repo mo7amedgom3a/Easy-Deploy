@@ -1,3 +1,4 @@
+"use client"
 import Link from "next/link"
 import { Rocket } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

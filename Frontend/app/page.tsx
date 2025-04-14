@@ -8,40 +8,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="fixed top-0 z-50 w-full site-navbar backdrop-blur supports-[backdrop-filter]:bg-opacity-80">
-        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+      <header className="fixed top-0 z-50 w-full site-navbar backdrop-blur supports-[backdrop-filter]:bg-opacity-80 font-inter font-medium text-sm">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2 font-bold text-xl transition-colors hover:text-primary">
-            <Rocket className="h-6 w-6" fill="hsl(221, 83%, 53%)" stroke="hsl(221, 83%, 53%)" />
-            <span className="hidden sm:inline text-[hsl(221,83%,53%)]">Easy Deploy</span>
+        <Rocket className="h-6 w-6" fill="hsl(221, 83%, 53%)" stroke="hsl(221, 83%, 53%)" />
+        <span className="hidden sm:inline text-[hsl(221,83%,53%)]">Easy Deploy</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6 mx-4">
-            <Link
-              href="#features"
-              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
-            >
-              Features
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
-            >
-              How It Works
-            </Link>
-            <Link
-              href="#pricing"
-              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
-            >
-              Pricing
-            </Link>
-            <Link
-              href="#testimonials"
-              className="text-sm font-medium text-[hsl(221,83%,53%)] hover:text-[hsl(221,83%,53%)] transition-colors hover:underline underline-offset-4"
-            >
-              Testimonials
-            </Link>
+        <Link
+          href="#features"
+          className="text-lg font-semibold text-[hsl(221,83%,53%)] relative group hover:text-[hsl(221,83%,63%)]"
+        >
+          Features
+          <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-[hsl(221,83%,53%)] transition-all duration-500 group-hover:w-full"></span>
+        </Link>
+        <Link
+          href="#how-it-works"
+          className="text-lg font-semibold text-[hsl(221,83%,53%)] relative group hover:text-[hsl(221,83%,63%)]"
+        >
+          How It Works
+          <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-[hsl(221,83%,53%)] transition-all duration-500 group-hover:w-full"></span>
+        </Link>
+        <Link
+          href="#pricing"
+          className="text-lg font-semibold text-[hsl(221,83%,53%)] relative group hover:text-[hsl(221,83%,63%)]"
+        >
+          Pricing
+          <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-[hsl(221,83%,53%)] transition-all duration-500 group-hover:w-full"></span>
+        </Link>
+        <Link
+          href="#testimonials"
+          className="text-lg font-semibold text-[hsl(221,83%,53%)] relative group hover:text-[hsl(221,83%,63%)]"
+        >
+          Testimonials
+          <span className="absolute left-0 bottom-0 w-0 h-[2px] bg-[hsl(221,83%,53%)] transition-all duration-500 group-hover:w-full"></span>
+        </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <UiverseButton />
+        <UiverseButton />
           </div>
         </div>
       </header>
@@ -68,18 +72,25 @@ export default function Home() {
             <div className="hero-content-wrapper">
               <div className="flex flex-col items-center text-center max-w-4xl mx-auto px-4 sm:px-6 md:px-8">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-white drop-shadow-md mb-6 md:mb-8">
-                  Deploy Your Code with Zero DevOps Hassle
+                  Deploy Your Code with Zero
+                  <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-awesome">
+                    <i className="fas fa-tools"></i> DevOps Hassle
+                  </span>
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed">
                   Connect your GitHub repository and we'll handle the entire DevOps pipeline. Build, test, deploy, and
                   scale your applications automatically.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                  <Button size="lg" className="hero-button-primary gap-2 w-full sm:w-auto min-w-[160px]" asChild>
+                    <Button
+                    size="lg"
+                    className="hero-button-primary gap-2 w-full sm:w-auto min-w-[160px] hover:text-white"
+                    asChild
+                    >
                     <Link href="/login">
                       Get Started <ArrowRight className="h-4 w-4" />
                     </Link>
-                  </Button>
+                    </Button>
                   <Button size="lg" className="hero-button-secondary gap-2 w-full sm:w-auto min-w-[160px]" asChild>
                     <Link href="/login">
                       <Github className="h-4 w-4" /> Connect GitHub
