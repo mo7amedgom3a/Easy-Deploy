@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from routers import user, auth
+from routers import user, auth, git_repositories
 import os
 from dotenv import load_dotenv
 from dependencies.database_connection import DatabaseConnection
@@ -18,7 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+@app.on_event("startup")
+async def startup_db_client():
+    await DatabaseConnection().connect()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
@@ -27,6 +29,7 @@ async def shutdown_db_client():
 
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(auth.router)
+app.include_router(git_repositories.router)
 
 
 if __name__ == "__main__":

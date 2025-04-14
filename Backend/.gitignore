@@ -3,6 +3,9 @@ __pycache__/
 __pycache__/*
 *.pyc*
 *cpython*
+# VSCode
+.vscode/
+*.vscode/*
 env/
 *.py[cod]
 *$py.class

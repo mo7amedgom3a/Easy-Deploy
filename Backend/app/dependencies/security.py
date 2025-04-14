@@ -32,14 +32,15 @@ async def get_current_user(
     user.access_token = payload.get("access_key")
     return user
 
-async def get_access_key_from_token_payload(
-    token: str = Depends(oauth2_scheme),
-) -> str:
+async def get_access_key_from_token_payload(token: str ) -> str:
     """
     Extract the access key from the JWT token payload.
     """
     try:
+        # get the current token 
+        
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        print("payload", payload)
         access_key = payload.get("access_key")
         if access_key is None:
             raise HTTPException(
