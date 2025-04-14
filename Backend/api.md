@@ -2,18 +2,6 @@
 
 This file provides a list of API endpoints for the backend, designed to be imported into Insomnia for easy testing.
 
-## Authentication Endpoints
-
-### POST /token
-- **Description**: Authenticates a user and returns a JWT token.
-- **Request Body**:
-  ```json
-  {
-    "username": "your_username",
-    "password": "your_password"
-  }
-  ```
-
 ## User Endpoints
 
 ### POST /users/
@@ -29,6 +17,13 @@ This file provides a list of API endpoints for the backend, designed to be impor
   }
   ```
 
+### GET /users/
+- **Description**: Retrieves all users.
+- **Headers**:
+  ```
+  Authorization: Bearer <JWT_TOKEN>
+  ```
+
 ### GET /users/me
 - **Description**: Retrieves the current user's information.
 - **Headers**:
@@ -38,37 +33,76 @@ This file provides a list of API endpoints for the backend, designed to be impor
 
 ### GET /users/{user_id}
 - **Description**: Retrieves a specific user by ID.
+- **Path Parameters**:
+  - `user_id` (string): The ID of the user.
 - **Headers**:
   ```
   Authorization: Bearer <JWT_TOKEN>
   ```
+
+### GET /users/github/me/
+- **Description**: Retrieves the current user's GitHub information.
+- **Headers**:
+  ```
+  Authorization: Bearer <JWT_TOKEN>
+  ```
+
+### GET /users/github/me/access_key
+- **Description**: Retrieves the current user's GitHub access key.
+- **Headers**:
+  ```
+  Authorization: Bearer <JWT_TOKEN>
+  ```
+
+## Authentication Endpoints
+
+### GET /auth/login
+- **Description**: Initiates the login process.
+
+### GET /auth/github/callback
+- **Description**: Handles the GitHub callback after user authentication.
+- **Query Parameters**:
+  - `code` (string): The authorization code from GitHub.
 
 ## Git Repository Endpoints
 
-### POST /git_repositories/
-- **Description**: Creates a new Git repository.
-- **Request Body**:
-  ```json
-  {
-    "name": "Your Repository Name",
-    "url": "Your Repository URL",
-    "description": "A description of your repository"
-  }
-  ```
+### GET /git/repository/{owner}
+- **Description**: Fetches the repositories of the authenticated user.
+- **Path Parameters**:
+  - `owner` (string): The owner of the repositories.
 - **Headers**:
   ```
   Authorization: Bearer <JWT_TOKEN>
   ```
 
-### GET /git_repositories/
-- **Description**: Retrieves all Git repositories.
+### GET /git/repository/{owner}/{repo_name}
+- **Description**: Fetches a specific repository by its name.
+- **Path Parameters**:
+  - `owner` (string): The owner of the repository.
+  - `repo_name` (string): The name of the repository.
 - **Headers**:
   ```
   Authorization: Bearer <JWT_TOKEN>
   ```
 
-### GET /git_repositories/{repo_id}
-- **Description**: Retrieves a specific Git repository by ID.
+### GET /git/repository/{owner}/{repo_name}/commits/{branch}
+- **Description**: Fetches the latest commit from a specific branch of a repository.
+- **Path Parameters**:
+  - `owner` (string): The owner of the repository.
+  - `repo_name` (string): The name of the repository.
+  - `branch` (string): The branch name.
+- **Headers**:
+  ```
+  Authorization: Bearer <JWT_TOKEN>
+  ```
+
+### GET /git/repository/{owner}/{repo_name}/blobs/{branch}/{sha}
+- **Description**: Fetches the blob tree structure of a repository.
+- **Path Parameters**:
+  - `owner` (string): The owner of the repository.
+  - `repo_name` (string): The name of the repository.
+  - `branch` (string): The branch name.
+  - `sha` (string): The SHA of the blob.
 - **Headers**:
   ```
   Authorization: Bearer <JWT_TOKEN>
