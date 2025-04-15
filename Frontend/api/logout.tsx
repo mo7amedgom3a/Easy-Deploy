@@ -1,9 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { HOST, PORT, API_URL } from "@/lib/constants";
+
+
+const LOGOUT_ENDPOINT = `${API_URL}/auth/logout`;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const response = await fetch('http://localhost:8000/auth/logout', { // Replace with your backend URL
+      const response = await fetch(`${LOGOUT_ENDPOINT}`, { // Replace with your backend URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
