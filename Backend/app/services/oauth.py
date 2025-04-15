@@ -29,7 +29,5 @@ async def get_github_user(code: str):
         user_data = user_resp.json()
         user_data["access_token"] = access_token
         
-
-        print("User data retrieved:", user_data)
-        
         return user_data
+    
