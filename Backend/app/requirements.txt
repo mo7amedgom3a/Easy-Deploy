@@ -8,4 +8,4 @@ requests
 motor # for async mongo db
 httpx # async HTTP requests
 python-jose # (for JWT)
-logging
+

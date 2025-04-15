@@ -7,7 +7,6 @@ class Repository(BaseModel):
     private: bool
     html_url: str
     node_id: str
-    owner: str
     url: str
     created_at: str
     updated_at: str

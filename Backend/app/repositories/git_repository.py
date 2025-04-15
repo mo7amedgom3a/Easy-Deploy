@@ -3,35 +3,23 @@ from schemas.repository import RepositorySchema
 from typing import Optional
 # Removed unused import
 from dependencies.database_connection import DatabaseConnection
+from typing import List
 
 class GitRepository(GitRepositoryInterface):
     def __init__(self, db: DatabaseConnection):
         self.db = db
 
-    async def save_repositories(self, owner_id: str, repos: list[dict])-> None:
-        """
-        Save a list of repositories for a given owner.
-        """
-        await self.collection.delete_many({"owner_id": owner_id})
+    async def save_repo(self, owner:str, repo:dict) -> dict:
+        repo_data = RepositorySchema(owner=owner, **repo)
+        await self.db.save("repositories", repo_data.dict())
+        return repo_data.dict()
+    
+    async def save_repositories(self, owner_id: str, repos: List[dict]) -> None:
         for repo in repos:
-            repo_doc = {
-                "github_id": repo["id"],
-                "owner_id": owner_id,
-                "name": repo["name"],
-                "full_name": repo["full_name"],
-                "private": repo["private"],
-                "html_url": repo["html_url"],
-                "description": repo.get("description"),
-                "language": repo.get("language"),
-            }
-            await self.collection.insert_one(repo_doc)
-        return None
+            repo_data = RepositorySchema(owner=owner_id, **repo)
+            await self.db.save("repositories", repo_data.dict())
 
     async def get_repository(self, repo_name: str) -> Optional[dict]:
-        """
-        Get a repository by its name.
-        """
-        repo = await self.collection.find_one({"name": repo_name})
-        if repo:
-            return dict(repo)
-        return None
+        query = {"name": repo_name}
+        result = await self.db.find_one("repositories", query)
+        return result

@@ -6,9 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 
 from dependencies.services import get_user_service
 
-router = APIRouter(prefix="/users", tags=["users"])
-
-
+router = APIRouter(prefix="/users", tags=["users"], dependencies=[Depends(get_current_user)])
+oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @router.get("/{user_id}", response_model=UserSchema)
 async def get_user_by_id(

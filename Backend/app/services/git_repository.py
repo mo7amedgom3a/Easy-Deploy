@@ -63,13 +63,12 @@ class GitRepositoryService:
                     headers={"Authorization": f"token {access_token}"}
                 )
             resp.raise_for_status()
-            return resp.json()
+            # return if type = tree or blob
+            return [item for item in resp.json().get("tree", []) if item.get("type") == "tree"]
         except httpx.HTTPStatusError as e:
             return {"error": str(e)}
-       
-    
-    # async def save_repositories(self, owner_id: str, repos: List[dict]) -> None:
-    #     await self.git_repository.save_repositories(owner_id, repos)
-
-    # async def get_repository(self, repo_name: str) -> Optional[dict]:
-    #     return await self.git_repository.get_repository(repo_name)
+        
+    async def save_repo(self, owner:str, repo:dict) -> dict:
+        repo_data = RepositorySchema(owner=owner, **repo)
+        await self.git_repository.save_repo(owner, repo_data.dict())
+        return repo_data.dict()
