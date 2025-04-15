@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+
 export const metadata: Metadata = {
   title: 'Easy Deploy',
   description: 'Created with ❤️',
@@ -12,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
       <body suppressHydrationWarning={true} >
         {children}
       </body>
