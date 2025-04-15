@@ -20,9 +20,9 @@ const GitHubCallback = () => {
   // Progress through authentication stages
   useEffect(() => {
     const stages = [
-      500, // Connecting to GitHub
+      800, // Connecting to GitHub
       1000, // Authenticating
-      500, // Verifying credentials
+      800, // Verifying credentials
       500, // Fetching profile
       1000, // Generating token
       500, // Redirecting
@@ -38,7 +38,7 @@ const GitHubCallback = () => {
       // Redirect to dashboard when complete
       const redirectTimer = setTimeout(() => {
         window.location.href = "/dashboard";
-      }, 4000)
+      }, 100)
 
       return () => clearTimeout(redirectTimer)
     }
