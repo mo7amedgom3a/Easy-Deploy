@@ -28,6 +28,21 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+      });
+      if (response.ok) {
+        window.location.href = '/login'; // Redirect to login page after successful logout
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
   return (
     <Sidebar variant={isMobile ? "default" : "floating"} collapsible="icon">
       <SidebarHeader>
@@ -133,7 +148,7 @@ export function DashboardSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={() => (window.location.href = "/logout")} tooltip="Log out">
+            <SidebarMenuButton onClick={handleLogout} tooltip="Log out">
               <LogOut className="h-4 w-4" />
               <span>Log out</span>
             </SidebarMenuButton>
@@ -143,4 +158,3 @@ export function DashboardSidebar() {
     </Sidebar>
   )
 }
-
