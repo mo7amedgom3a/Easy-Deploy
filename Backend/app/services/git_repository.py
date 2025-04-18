@@ -15,13 +15,25 @@ class GitRepositoryService:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(
                     f"https://api.github.com/users/{owner}/repos",
-                    headers={"Authorization": f"token {access_token}"}
+                    headers={"Authorization": f"token {access_token}"},
+                    params={"per_page": 10, "sort": "created", "direction": "desc"}
                 )
             resp.raise_for_status()
+           
             return resp.json()
         except httpx.HTTPStatusError as e:
             return {"error": str(e)}
-    
+    async def get_language(self, owner: str, repo_name: str, access_token: str) -> List[str]:
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"https://api.github.com/repos/{owner}/{repo_name}/languages",
+                    headers={"Authorization": f"token {access_token}"}
+                )
+            resp.raise_for_status()
+            return list(resp.json().keys())
+        except httpx.HTTPStatusError as e:
+            return {"error": str(e)}
     
     async def fetch_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         try:
@@ -31,7 +43,12 @@ class GitRepositoryService:
                     headers={"Authorization": f"token {access_token}"}
                 )
             resp.raise_for_status()
-            return resp.json()
+            repo = RepositorySchema(**resp.json())
+            print(repo)
+            latest_commit = await self.get_latest_commit(owner, repo.name, repo.default_branch, access_token)
+            repo.blob_sha = latest_commit.get("sha")
+            repo.languages = await self.get_language(owner, repo.name, access_token)
+            return repo.dict()
         except httpx.HTTPStatusError as e:
             return {"error": str(e)}
         
@@ -44,7 +61,7 @@ class GitRepositoryService:
                     headers={"Authorization": f"token {access_token}"}
                 )
             resp.raise_for_status()
-            print(resp.json())
+            
             if "error" in resp.json():
                 return {"error": resp.json()["error"]}
             return resp.json()

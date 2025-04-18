@@ -40,7 +40,6 @@ async def get_access_key_from_token_payload(token: str ) -> str:
         # get the current token 
         
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        print("payload", payload)
         access_key = payload.get("access_key")
         if access_key is None:
             raise HTTPException(

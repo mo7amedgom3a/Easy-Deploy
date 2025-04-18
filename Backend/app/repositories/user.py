@@ -72,7 +72,6 @@ class User(UserInterface):
         collection = await self.db.get_collection("users")
         user_data = await collection.find_one({"github_id": github_id})
         
-        print("github_id", github_id)
         if user_data:
             user_data["email"] = user_data.get("email", "") or ""
             user_data["login"] = user_data.get("login", "") or ""
