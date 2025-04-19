@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from routers import user, auth, git_repositories
+from routers import user, auth, git_repositories, aws_user
 import os
 from dotenv import load_dotenv
 from dependencies.database_connection import DatabaseConnection
@@ -30,6 +30,7 @@ async def shutdown_db_client():
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(auth.router)
 app.include_router(git_repositories.router)
+app.include_router(aws_user.router, dependencies=[Depends(oauth2_scheme)])
 
 
 if __name__ == "__main__":

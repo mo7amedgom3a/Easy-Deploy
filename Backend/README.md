@@ -80,12 +80,12 @@ The API will be available at `http://localhost:8000`
 
 Build the Docker image:
 ```bash
-docker build -t easy-deploy-backend .
+docker build --no-cache -t easy-deploy-backend .
 ```
 
 Run the container:
 ```bash
-docker run -p 8000:8000 easy-deploy-backend
+docker run -d -p 8000:8000 --network host easy-deploy-backend
 ```
 
 ## API Documentation

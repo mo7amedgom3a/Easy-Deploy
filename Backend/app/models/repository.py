@@ -12,5 +12,5 @@ class Repository(BaseModel):
     default_branch: str
     blob_sha: str
     description: str | None = None
-    language: List[str] | None = None
+    languages: List[str] | None = None
     
