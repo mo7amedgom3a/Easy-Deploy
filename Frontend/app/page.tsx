@@ -3,6 +3,8 @@ import Image from "next/image"
 import { ArrowRight, Code, Github, GitMerge, Rocket, Server, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import UiverseButton from '@/components/ui/Uiverse-Button';
+import InfiniteIconSlider from "@/components/infinite-icon-slider"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function Home() {
@@ -123,6 +125,19 @@ export default function Home() {
             </div>
           </div>
         </section>
+        {/* Infinite Icon Slider */}
+        <section className="py-16 md:py-20 lg:py-24 bg-muted/50">
+          <div className="container px-4 sm:px-6 md:px-8">
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">Integrations</h2>
+              <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+                Seamlessly integrate with your favorite tools and services.
+              </p>
+            </div>
+            <InfiniteIconSlider />
+          </div>
+        </section>
+        
         {/* How It Works Section */}
         <section id="how-it-works" className="py-16 md:py-20 lg:py-24">
           <div className="container px-4 sm:px-6 md:px-8">

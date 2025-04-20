@@ -29,10 +29,23 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--secondary))',
   				foreground: 'hsl(var(--secondary-foreground))'
   			},
+			
+			animation: {
+				["infinite-slider"]: "infiniteSlider 20s linear infinite",
+			},
   			muted: {
   				DEFAULT: 'hsl(var(--muted))',
   				foreground: 'hsl(var(--muted-foreground))'
   			},
+			  keyframes: {
+				infiniteSlider: {
+				  "0%": { transform: "translateX(0)" },
+				  "100%": {
+					transform: "translateX(calc(-250px * 5))",
+				  },
+				},
+			  },
+			  
   			accent: {
   				DEFAULT: 'hsl(var(--accent))',
   				foreground: 'hsl(var(--accent-foreground))'
