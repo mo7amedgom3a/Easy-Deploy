@@ -13,7 +13,11 @@ env/
 .env
 # C extensions
 *.so
-
+# terraform 
+*.tfstate
+*.tfstate.*
+.terraform.tfstate
+.terraform/
 # Distribution / packaging
 .Python
 build/

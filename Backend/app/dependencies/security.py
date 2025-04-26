@@ -56,6 +56,27 @@ async def get_access_key_from_token_payload(token: str ) -> str:
         )
     
 
-
-
+async def get_github_id_from_token_payload(token: str) -> str:
+    """
+    Extract the github id from the JWT token payload.
+    """
+    try:
+        # get the current token 
+        
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        github_id = payload.get("sub")
+        if github_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        return github_id
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 

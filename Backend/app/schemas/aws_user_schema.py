@@ -13,9 +13,11 @@ class AWSUserSchema(BaseModel):
     aws_account_id: str
     created_at: Optional[str] = datetime.now().isoformat()
 
+
     class Config:
         orm_mode = True
         allow_population_by_field_name = True
+        from_attributes=True
         arbitrary_types_allowed = True
         json_encoders = {
             str: lambda v: v,

@@ -131,3 +131,52 @@ async def get_blob_tree(
         raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/repository/{owner}/{repo_name}/clone", response_model=None)
+async def clone_repository(
+    owner: str,
+    repo_name: str,
+    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
+    token: str = Depends(outh_2_scheme)
+):
+    """
+    Clones a repository to the local filesystem.
+    """
+    try:
+        # Get the access key from the token payload
+        access_key = await get_access_key_from_token_payload(token)
+        result = await git_repository_service.clone_repository(owner=owner, repo_name=repo_name, access_token=access_key)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/repository/{owner}/{repo_name}/pull", response_model=None)
+async def pull_repository(
+    owner: str,
+    repo_name: str,
+    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
+    token: str = Depends(outh_2_scheme)
+):
+    
+    """
+    Pulls the latest changes for a cloned repository.
+    """
+    try:
+        # Get the access key from the token payload
+        access_key = await get_access_key_from_token_payload(token)
+        result = await git_repository_service.pull_repository(owner=owner, repo_name=repo_name, access_token=access_key)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

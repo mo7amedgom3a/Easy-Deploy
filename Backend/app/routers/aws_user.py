@@ -3,15 +3,17 @@ from services.aws_user import AWSUserService
 from schemas.aws_user_schema import AWSUserSchema
 from dependencies.services import get_aws_user_service
 from models.aws_user import AWSUser
+from schemas.user_schema import UserSchema
 from dependencies.security import get_current_user
 from typing import Optional, List
+from fastapi.security import OAuth2PasswordBearer
 
+outh_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-router = APIRouter(prefix="/aws_user", tags=["aws_user"])
+router = APIRouter(prefix="/aws_user", tags=["aws_user"], dependencies=[Depends(get_current_user)])
 
 @router.get("/", response_model=List[AWSUserSchema])
 async def get_aws_users(
-    current_user: str = Depends(get_current_user),
     aws_user_service: AWSUserService = Depends(get_aws_user_service)
 ) -> List[AWSUserSchema]:
     """
@@ -26,7 +28,6 @@ async def get_aws_users(
 @router.get("/{aws_user_id}", response_model=AWSUserSchema)
 async def get_aws_user(
     aws_user_id: str,
-    current_user: str = Depends(get_current_user),
     aws_user_service: AWSUserService = Depends(get_aws_user_service)
 ) -> AWSUserSchema:
     """
@@ -38,16 +39,16 @@ async def get_aws_user(
     return aws_user 
 
 
+
 @router.post("/", response_model=AWSUserSchema)
 async def create_aws_user(
-    aws_user: AWSUser,
-    current_user: str = Depends(get_current_user),
+    current_user: UserSchema = Depends(get_current_user),
     aws_user_service: AWSUserService = Depends(get_aws_user_service)
 ) -> AWSUserSchema:
     """
     Create a new AWS user.
     """
-    aws_user = await aws_user_service.create_user(aws_user)
+    aws_user = await aws_user_service.create_user(current_user.github_id)
     if not aws_user:
         raise HTTPException(status_code=400, detail="Failed to create AWS user")
-    return AWSUserSchema(**aws_user)
+    return aws_user
