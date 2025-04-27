@@ -79,6 +79,41 @@ class GitRepositoryService:
             return {"error": str(e)}
 
 
+
+    async def create_github_webhook(self, owner: str, repo_name: str, access_token: str) -> dict:
+        """Create a webhook for a repository."""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"https://api.github.com/repos/{owner}/{repo_name}/hooks",
+                    headers={
+                        "Authorization": f"token {access_token}",
+                        "Accept": "application/vnd.github.v3+json",
+                        "X-GitHub-Api-Version": "2022-11-28"
+                    },
+                    json={
+                        "config": {
+                            "url": "https://kp6tjc7t-8000.uks1.devtunnels.ms/git/repository/github-webhook",
+                            "content_type": "json",
+
+                            "insecure_ssl": "0"
+                        },
+                        "events": ["push"]
+                    }
+                )
+            resp.raise_for_status()
+            print(resp.json())
+            return resp.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return {"error": "Repository not found or you don't have permission to create webhooks"}
+            elif e.response.status_code == 401:
+                return {"error": "Authentication failed. Please check your access token"}
+            return {"error": str(e)}
+        except Exception as e:
+            return {"error": f"Failed to create webhook: {str(e)}"}
+
+
     async def get_blob_tree(self, owner: str, repo_name: str, branch: str, access_token: str, sha: str="") -> dict:
         """Get the directory tree for a repository."""
         if not sha:
@@ -120,6 +155,7 @@ class GitRepositoryService:
         """Pull the latest changes for a cloned repository."""
         clone_url = f"https://{access_token}@github.com/{owner}/{repo_name}.git"
         clone_dir = f"/tmp/repo/{owner}/{repo_name}"
+        print(clone_dir)
         if not os.path.exists(clone_dir):
             return {"error": "Repository not cloned yet"}
         

@@ -18,7 +18,9 @@ const GitHubCallback = () => {
                     const data = await res.json();
 
                     if (data.jwt_token) {
-                        localStorage.setItem("token", data.jwt_token);
+                        if (typeof window !== 'undefined') {
+                            localStorage.setItem("token", data.jwt_token);
+                        }
                         router.push("/dashboard"); // redirect to a protected page
                     } else {
                         console.error("Login failed", data);

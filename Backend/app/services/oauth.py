@@ -7,10 +7,11 @@ async def get_github_user(code: str):
             "https://github.com/login/oauth/access_token",
             headers={"Accept": "application/json"},
             data={
-                "client_id": settings.CLIENT_ID,
-                "client_secret": settings.CLIENT_SECRET,
-                "code": code,
-                "redirect_uri": settings.REDIRECT_URI,
+            "client_id": settings.CLIENT_ID,
+            "client_secret": settings.CLIENT_SECRET,
+            "code": code,
+            "redirect_uri": settings.REDIRECT_URI,
+            "scope": "admin:repo_hook repo", 
             },
         )
         token_data = token_resp.json()

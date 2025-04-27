@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { HOST, PORT, API_URL } from "@/lib/constants"
+
+const LOGIN_ENDPOINT = `${API_URL}/auth/github/callback`
 
 const GitHubCallback = () => {
   const router = useRouter()
   const [stage, setStage] = useState(0)
   const [dots, setDots] = useState("")
+  const [error, setError] = useState("")
 
   // Animate loading dots
   useEffect(() => {
@@ -17,32 +21,53 @@ const GitHubCallback = () => {
     return () => clearInterval(dotsInterval)
   }, [])
 
-  // Progress through authentication stages
+  // GitHub OAuth logic
   useEffect(() => {
-    const stages = [
-      800, // Connecting to GitHub
-      1000, // Authenticating
-      800, // Verifying credentials
-      500, // Fetching profile
-      1000, // Generating token
-      500, // Redirecting
-    ]
-
-    if (stage < stages.length) {
-      const timer = setTimeout(() => {
-        setStage(stage + 1)
-      }, stages[stage])
-
-      return () => clearTimeout(timer)
-    } else {
-      // Redirect to dashboard when complete
-      const redirectTimer = setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 100)
-
-      return () => clearTimeout(redirectTimer)
+    const fetchToken = async () => {
+      try {
+        setStage(1) // Connecting to GitHub
+        
+        const code = new URLSearchParams(window.location.search).get("code")
+        if (!code) {
+          setError("No authorization code found")
+          return
+        }
+        
+        setStage(2) // Authenticating
+        
+        const res = await fetch(`${LOGIN_ENDPOINT}?code=${code}`)
+        
+        setStage(3) // Verifying credentials
+        
+        const data = await res.json()
+        
+        setStage(4) // Fetching profile
+        
+        if (data.jwt_token) {
+          setStage(5) // Generating token
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem("token", data.jwt_token)
+          }
+          
+          setStage(6) // Redirecting
+          
+          // Final redirect with a slight delay
+          setTimeout(() => {
+            router.push("/dashboard")
+          }, 1000)
+        } else {
+          setError("Authentication failed")
+          console.error("Login failed", data)
+        }
+      } catch (error) {
+        setError("An error occurred during authentication")
+        console.error("Callback error", error)
+      }
     }
-  }, [stage, router])
+
+    fetchToken()
+  }, [router])
 
   return (
     <div className="github-auth-container">
@@ -56,73 +81,89 @@ const GitHubCallback = () => {
           </svg>
         </div>
 
-        <div className="auth-stages">
-          <div className={`auth-stage ${stage >= 1 ? "active" : ""} ${stage > 1 ? "completed" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Connecting to GitHub{stage === 1 ? <span className="loading-dots">{dots}</span> : ""}</div>
-              {stage > 1 && <div className="stage-checkmark">✓</div>}
-            </div>
-          </div>
+        {error ? (
+          <div className="auth-error">{error}</div>
+        ) : (
+          <>
+            <div className="auth-stages">
+              <div className={`auth-stage ${stage >= 1 ? "active" : ""} ${stage > 1 ? "completed" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Connecting to GitHub{stage === 1 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                  {stage > 1 && <div className="stage-checkmark">✓</div>}
+                </div>
+              </div>
 
-          <div className={`auth-stage ${stage >= 2 ? "active" : ""} ${stage > 2 ? "completed" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Authenticating{stage === 2 ? <span className="loading-dots">{dots}</span> : ""}</div>
-              {stage > 2 && <div className="stage-checkmark">✓</div>}
-            </div>
-          </div>
+              <div className={`auth-stage ${stage >= 2 ? "active" : ""} ${stage > 2 ? "completed" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Authenticating{stage === 2 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                  {stage > 2 && <div className="stage-checkmark">✓</div>}
+                </div>
+              </div>
 
-          <div className={`auth-stage ${stage >= 3 ? "active" : ""} ${stage > 3 ? "completed" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Verifying credentials{stage === 3 ? <span className="loading-dots">{dots}</span> : ""}</div>
-              {stage > 3 && <div className="stage-checkmark">✓</div>}
-            </div>
-          </div>
+              <div className={`auth-stage ${stage >= 3 ? "active" : ""} ${stage > 3 ? "completed" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Verifying credentials{stage === 3 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                  {stage > 3 && <div className="stage-checkmark">✓</div>}
+                </div>
+              </div>
 
-          <div className={`auth-stage ${stage >= 4 ? "active" : ""} ${stage > 4 ? "completed" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Fetching profile{stage === 4 ? <span className="loading-dots">{dots}</span> : ""}</div>
-              {stage > 4 && <div className="stage-checkmark">✓</div>}
-            </div>
-          </div>
+              <div className={`auth-stage ${stage >= 4 ? "active" : ""} ${stage > 4 ? "completed" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Fetching profile{stage === 4 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                  {stage > 4 && <div className="stage-checkmark">✓</div>}
+                </div>
+              </div>
 
-          <div className={`auth-stage ${stage >= 5 ? "active" : ""} ${stage > 5 ? "completed" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Generating token{stage === 5 ? <span className="loading-dots">{dots}</span> : ""}</div>
-              {stage > 5 && <div className="stage-checkmark">✓</div>}
-            </div>
-          </div>
+              <div className={`auth-stage ${stage >= 5 ? "active" : ""} ${stage > 5 ? "completed" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Generating token{stage === 5 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                  {stage > 5 && <div className="stage-checkmark">✓</div>}
+                </div>
+              </div>
 
-          <div className={`auth-stage ${stage >= 6 ? "active" : ""}`}>
-            <div className="stage-indicator"></div>
-            <div className="stage-content">
-              <div className="stage-label">
-                Redirecting{stage === 6 ? <span className="loading-dots">{dots}</span> : ""}</div>
+              <div className={`auth-stage ${stage >= 6 ? "active" : ""}`}>
+                <div className="stage-indicator"></div>
+                <div className="stage-content">
+                  <div className="stage-label">
+                    Redirecting{stage === 6 ? <span className="loading-dots">{dots}</span> : ""}
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="auth-progress-container">
-          <div className="auth-progress-bar" style={{ width: `${Math.min(100, (stage / 6) * 100)}%` }}></div>
-        </div>
+            <div className="auth-progress-container">
+              <div className="auth-progress-bar" style={{ width: `${Math.min(100, (stage / 6) * 100)}%` }}></div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="auth-message">
-        {stage < 6
-          ? "Please wait while we authenticate your GitHub account"
-          : "Authentication successful! Redirecting..."}
+        {error ? (
+          "Authentication failed. Please try again."
+        ) : stage < 6 ? (
+          "Please wait while we authenticate your GitHub account"
+        ) : (
+          "Authentication successful! Redirecting..."
+        )}
       </div>
     </div>
   )
 }
 
-export default GitHubCallback;
+export default GitHubCallback

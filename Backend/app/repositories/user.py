@@ -26,8 +26,8 @@ class User(UserInterface):
     def map_user_response_to_user(self, user: dict) -> UserSchema:
         return UserSchema(
             github_id=str(user.get("id")),
-            name=user.get("name", ""),
-            login=user.get("login"),
+            name=user.get("name", "") or "",
+            login=user.get("login", ""),
             bio=user.get("bio"),
             access_token=user.get("access_token"),
             repos_urls=user.get("repos_url") if user.get("repos_url") else "",

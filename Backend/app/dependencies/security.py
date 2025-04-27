@@ -18,9 +18,9 @@ async def get_current_user(
     github_id = None
     try:
         payload = decode_access_token(token)
-        github_id = payload.get("sub")
-        if github_id is None:
+        if payload is None:
             raise credentials_exception
+        github_id = payload.get("sub")
         if github_id is None:
             raise credentials_exception
     except JWTError:

@@ -3,7 +3,7 @@ from typing import Optional
 
 class UserSchema(BaseModel):
     github_id: Optional[str] = None
-    name: str
+    name: Optional[str] = None
     login: Optional[str] = None
     bio: Optional[str] = None
     repos_urls: Optional[str] = None
