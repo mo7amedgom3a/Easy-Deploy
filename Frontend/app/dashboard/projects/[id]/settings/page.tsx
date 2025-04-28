@@ -23,7 +23,7 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
     outputDirectory: ".next",
     rootDirectory: "/",
     installCommand: "npm install",
-    domain: "ecommerce-frontend.deploywave.app",
+    domain: "ecommerce-frontend.easydeploy.app",
     repository: "acme/ecommerce-frontend",
     branch: "main",
     autoScaling: true,

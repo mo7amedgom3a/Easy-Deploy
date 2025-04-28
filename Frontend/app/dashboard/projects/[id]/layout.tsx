@@ -20,14 +20,14 @@ const getProject = (id: string) => {
       id: "1",
       name: "E-commerce Frontend",
       status: "active",
-      domain: "ecommerce-frontend.deploywave.app",
+      domain: "ecommerce-frontend.easydeploy.app",
       repository: "acme/ecommerce-frontend",
     },
     {
       id: "2",
       name: "API Backend",
       status: "active",
-      domain: "api-backend.deploywave.app",
+      domain: "api-backend.easydeploy.app",
       repository: "acme/api-backend",
     },
   ]

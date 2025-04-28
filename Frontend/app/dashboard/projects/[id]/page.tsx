@@ -28,7 +28,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     id: params.id,
     name: "E-commerce Frontend",
     status: "active",
-    domain: "ecommerce-frontend.deploywave.app",
+    domain: "ecommerce-frontend.easydeploy.app",
     repository: "acme/ecommerce-frontend",
     framework: "Next.js",
     nodeVersion: "18.x",
