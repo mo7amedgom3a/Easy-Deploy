@@ -14,6 +14,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="light" style={{ colorScheme: 'light' }}>
+      <head>
+        <link rel="icon" href="/rocket.svg" sizes="any" />
+      </head>
       <body suppressHydrationWarning={true} >
         {children}
       </body>
