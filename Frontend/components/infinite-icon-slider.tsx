@@ -1,12 +1,10 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
 import { motion, useAnimationControls } from "framer-motion"
-import { useState } from "react"
 
 export default function InfiniteIconSlider() {
   const sliderRef = useRef<HTMLDivElement>(null)
-  const [isPaused, setIsPaused] = useState(false)
   const controls = useAnimationControls()
 
   const icons = [
@@ -22,54 +20,32 @@ export default function InfiniteIconSlider() {
 
   const duplicatedIcons = [...icons, ...icons]
 
-  const handleMouseEnter = () => {
-    setIsPaused(true)
-  }
-
-  const handleMouseLeave = () => {
-    setIsPaused(false)
-    controls.start({
-      x: [0, -1920],
-      transition: {
-        x: {
-          repeat: Number.POSITIVE_INFINITY,
-          repeatType: "loop",
-          duration: 30,
-          ease: "linear",
-        },
+  const singleSetWidth = icons.length * 125; // Calculate width of one set of icons (8 * 125 = 1000)
+  const animationConfig = {
+    x: [0, -singleSetWidth], // Animate by the width of one icon set
+    transition: {
+      x: {
+        repeat: Number.POSITIVE_INFINITY,
+        repeatType: "loop",
+        duration: 30,
+        ease: "linear",
       },
-    })
-  }
+    },
+  };
+
+  useEffect(() => {
+    controls.start(animationConfig);
+  }, [controls]);
 
   return (
-    <div className="relative m-auto overflow-hidden  before:absolute before:left-0 before:top-0 before:z-[2] before:h-full before:w-[100px] before:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] before:content-[''] after:absolute after:right-0 after:top-0 after:z-[2] after:h-full after:w-[100px] after:-scale-x-100 after:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] after:content-['']">
+    <div className="relative m-auto overflow-hidden before:absolute before:left-0 before:top-0 before:z-[2] before:h-full before:w-[100px] before:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] before:content-[''] after:absolute after:right-0 after:top-0 after:z-[2] after:h-full after:w-[100px] after:-scale-x-100 after:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] after:content-['']">
       <div
         ref={sliderRef}
-        className="animate-infinite-slider flex w-[calc(250px*10)]"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        className="flex"
       >
         <motion.div
           className="flex"
           animate={controls}
-          initial={{
-            x: 0,
-          }}
-          onAnimationStart={() => {
-            if (!isPaused) {
-              controls.start({
-                x: [0, -1920],
-                transition: {
-                  x: {
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "loop",
-                    duration: 30,
-                    ease: "linear",
-                  },
-                },
-              })
-            }
-          }}
         >
           {duplicatedIcons.map((item, index) => (
             <div
@@ -89,5 +65,5 @@ export default function InfiniteIconSlider() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
