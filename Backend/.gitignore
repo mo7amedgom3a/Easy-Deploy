@@ -18,6 +18,7 @@ env/
 *.tfstate.*
 .terraform.tfstate
 .terraform/
+*.terraform.lock.hcl
 # Distribution / packaging
 .Python
 build/
