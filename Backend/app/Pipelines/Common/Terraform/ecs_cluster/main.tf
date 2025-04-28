@@ -44,20 +44,6 @@ resource "aws_iam_instance_profile" "aws_ecs_instance_profile" {
   role = aws_iam_role.aws_ecs_instance_role.name
 }
 
-resource "aws_ecs_capacity_provider" "aws_ecs_capacity_provider" {
-  name = var.aws_ecs_capacity_provider_name
-
-  auto_scaling_group_provider {
-    auto_scaling_group_arn = aws_autoscaling_group.ecs_asg.arn
-
-    managed_scaling {
-      maximum_scaling_step_size = 1000
-      minimum_scaling_step_size = 1
-      status                    = "ENABLED"
-      target_capacity           = 3
-    }
-  }
-}
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution_role" {
@@ -81,20 +67,6 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-
-
-resource "aws_ecs_cluster_capacity_providers" "example" {
-  cluster_name = aws_ecs_cluster.ecs_cluster.name
-
-  capacity_providers = [aws_ecs_capacity_provider.aws_ecs_capacity_provider.name]
-
-  default_capacity_provider_strategy {
-    base              = 1
-    weight            = 100
-    capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
-  }
 }
 
 # Define the ECS task definition for the service
@@ -126,6 +98,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     }
   ])
 }
+
 # Define the ECS service that will run the task
 resource "aws_ecs_service" "ecs_service" {
   name            = var.aws_ecs_service_name
@@ -134,7 +107,7 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
   
   network_configuration {
-    subnets         = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+    subnets         = [aws_subnet.subnet.id]
     security_groups = [aws_security_group.security_group.id]
     
   }
@@ -148,10 +121,6 @@ resource "aws_ecs_service" "ecs_service" {
     redeployment = timestamp()
   }
 
-  capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
-    weight            = 100
-  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
@@ -159,6 +128,9 @@ resource "aws_ecs_service" "ecs_service" {
     container_name   = var.aws_ecs_task_container_name
     container_port   = 5000
   }
+  depends_on = [
+    aws_lb_listener.ecs_nlb_listener,
+    aws_lb_target_group.ecs_tg
+  ]
 
-  depends_on = [aws_autoscaling_group.ecs_asg]
 }

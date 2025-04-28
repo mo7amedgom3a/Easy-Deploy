@@ -73,7 +73,6 @@ variable "availability_zones" {
 variable "repo_name" {
   description = "Name of the ECR repository"
   type        = string
-  default     = "easy-deploy-repo"
 }
 variable "ecs_task_family" {
   description = "Family name for the ECS task definition"
@@ -97,13 +96,13 @@ variable "aws_ecs_task_container_name" {
 variable "ecs_task_container_port" {
   description = "Container port for the ECS task definition"
   type        = number
-  default     = 5000
+ 
 }
 
 variable "ecs_task_host_port" {
   description = "Host port for the ECS task definition"
   type        = number
-  default     = 5000
+ 
 }
 
 variable "ecs_task_protocol" {
