@@ -1,0 +1,24 @@
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Configure Nginx as reverse proxy
+  template:
+    src: templates/nginx_default.j2
+    dest: /etc/nginx/sites-available/default
+  notify: Reload Nginx
+
+- name: Test Nginx config
+  command: nginx -t
+
+- name: Enable and start Nginx
+  systemd:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Reload Nginx
+  systemd:
+    name: nginx
+    state: reloaded

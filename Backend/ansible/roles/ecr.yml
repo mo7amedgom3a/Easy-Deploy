@@ -1,0 +1,11 @@
+- name: Login to ECR
+  shell: |
+    aws ecr get-login-password --region {{ aws_region }} | \
+    docker login --username AWS --password-stdin {{ ecr_registry }}
+  register: docker_login
+  changed_when: "'Login Succeeded' in docker_login.stdout"
+
+- name: Pull Flask app image
+  command: docker pull {{ ecr_registry }}/flask-app-repo:latest
+  register: docker_pull
+  changed_when: "'Downloaded newer image' in docker_pull.stdout"

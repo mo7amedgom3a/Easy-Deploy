@@ -1,0 +1,13 @@
+---
+- name: Configure EC2 instance
+  hosts: webserver
+  become: yes
+  vars_files:
+    - group_vars.yml
+
+  tasks:
+    - include_tasks: roles/common.yml
+    - include_tasks: roles/docker.yml
+    - include_tasks: roles/nginx.yml
+    - include_tasks: roles/awscli.yml
+    - include_tasks: roles/ecr.yml

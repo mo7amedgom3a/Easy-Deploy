@@ -1,0 +1,166 @@
+# ---
+# - name: Configure EC2 instance
+#   hosts: webserver
+#   become: yes
+
+#   vars:
+#     docker_gpg_url: https://download.docker.com/linux/ubuntu/gpg
+#     docker_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+#     aws_cli_zip_url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+#     aws_cli_zip_dest: "/tmp/awscliv2.zip"
+#     aws_cli_unzip_dest: "/tmp"
+#     aws_region: "us-east-1"
+#     aws_account_id: "058264170818"  # get from terraform output
+#     ecr_registry: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+
+#   tasks:
+
+#     - name: Update apt cache
+#       apt:
+#         update_cache: yes
+#       tags: apt
+
+#     - name: Install base packages
+#       apt:
+#         name:
+#           - python3
+#           - git
+#         state: present
+#       tags: base
+
+#     - name: Install prerequisites for Docker
+#       apt:
+#         name:
+#           - apt-transport-https
+#           - ca-certificates
+#           - curl
+#           - software-properties-common
+#         state: present
+#       tags: docker
+
+#     - name: Add Docker GPG key
+#       apt_key:
+#         url: "{{ docker_gpg_url }}"
+#         state: present
+#       tags: docker
+
+#     - name: Add Docker repository
+#       apt_repository:
+#         repo: "{{ docker_repo }}"
+#         state: present
+#       tags: docker
+
+#     - name: Update apt cache after adding Docker repo
+#       apt:
+#         update_cache: yes
+#       tags: docker
+
+#     - name: Install Docker
+#       apt:
+#         name: docker-ce
+#         state: present
+#       tags: docker
+
+#     - name: Start and enable Docker
+#       systemd:
+#         name: docker
+#         enabled: yes
+#         state: started
+#       tags: docker
+
+#     - name: Add ubuntu user to docker group
+#       user:
+#         name: ubuntu
+#         groups: docker
+#         append: yes
+#       tags: docker
+
+#     - name: Install Nginx
+#       apt:
+#         name: nginx
+#         state: present
+#       tags: nginx
+
+#     - name: Configure Nginx as a reverse proxy for Flask app
+#       copy:
+#         dest: /etc/nginx/sites-available/default
+#         content: |
+#           server {
+#               listen 80;
+
+#               location / {
+#                   proxy_pass http://localhost:5000;
+#                   proxy_set_header Host $host;
+#                   proxy_set_header X-Real-IP $remote_addr;
+#                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#                   proxy_set_header X-Forwarded-Proto $scheme;
+#               }
+#           }
+#       notify: Reload Nginx
+#       tags: nginx
+
+#     - name: Test Nginx configuration
+#       command: nginx -t
+#       tags: nginx
+
+#     - name: Start and enable Nginx
+#       systemd:
+#         name: nginx
+#         enabled: yes
+#         state: started
+#       tags: nginx
+
+#     - name: Install packages for AWS CLI
+#       apt:
+#         name:
+#           - curl
+#           - unzip
+#         state: present
+#       tags: aws
+
+#     - name: Download AWS CLI installer
+#       get_url:
+#         url: "{{ aws_cli_zip_url }}"
+#         dest: "{{ aws_cli_zip_dest }}"
+#       tags: aws
+
+#     - name: Unzip AWS CLI installer
+#       unarchive:
+#         src: "{{ aws_cli_zip_dest }}"
+#         dest: "{{ aws_cli_unzip_dest }}"
+#         remote_src: yes
+#       tags: aws
+
+#     - name: Run AWS CLI installer
+#       command: "/tmp/aws/install"
+#       args:
+#         creates: /usr/local/bin/aws
+#       tags: aws
+
+#     - name: Verify AWS CLI installation
+#       command: "aws --version"
+#       register: aws_cli_version
+#       changed_when: false
+#       tags: aws
+
+#     - name: Display AWS CLI version
+#       debug:
+#         msg: "{{ aws_cli_version.stdout }}"
+#       tags: aws
+
+#     - name: Authenticate Docker with AWS ECR
+#       shell: "aws ecr get-login-password --region {{ aws_region }} | docker login --username AWS --password-stdin {{ ecr_registry }}"
+#       register: docker_login
+#       changed_when: "'Login Succeeded' in docker_login.stdout"
+#       tags: docker
+#     - name: pull docker image
+#       command: "docker pull {{ ecr_registry }}/flask-app-repo:latest"
+#       register: docker_pull
+#       changed_when: "'Downloaded newer image' in docker_pull.stdout"
+#       tags: docker
+    
+#   handlers:
+#     - name: Reload Nginx
+#       systemd:
+#         name: nginx
+#         state: reloaded

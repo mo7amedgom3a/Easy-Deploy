@@ -1,0 +1,31 @@
+- name: Install unzip and curl
+  apt:
+    name:
+      - unzip
+      - curl
+    state: present
+
+- name: Download AWS CLI
+  get_url:
+    url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+    dest: "/tmp/awscliv2.zip"
+
+- name: Unzip AWS CLI
+  unarchive:
+    src: "/tmp/awscliv2.zip"
+    dest: "/tmp"
+    remote_src: yes
+
+- name: Install AWS CLI
+  command: "/tmp/aws/install"
+  args:
+    creates: /usr/local/bin/aws
+
+- name: Show AWS CLI version
+  command: aws --version
+  register: aws_cli_version
+  changed_when: false
+
+- name: Debug AWS CLI version
+  debug:
+    msg: "{{ aws_cli_version.stdout }}"
