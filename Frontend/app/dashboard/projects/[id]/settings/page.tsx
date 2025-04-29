@@ -129,7 +129,7 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="build" className="space-y-6">
           <Card>
             <CardHeader>
@@ -193,4 +193,11 @@ export default function SettingsPage({ params }: { params: { id: string } }) {
                 <p className="text-sm text-muted-foreground mt-1">
                   The directory where your built application is located.
                 </p>
-              </div>\
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
