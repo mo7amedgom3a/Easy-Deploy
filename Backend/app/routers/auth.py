@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from fastapi.responses import RedirectResponse, JSONResponse
 from services.oauth import get_github_user
 from services.user import UserService
+from typing import Optional
 
 from services.jwt import create_access_token
 from dependencies.services import get_user_service
@@ -18,8 +19,16 @@ async def logout():
     return response
 
 @router.post("/logout")
-async def logout_post():
+async def logout_post(authorization: Optional[str] = Header(None)):
     # Handle POST request from frontend logout API
+    # Extract token from Authorization header
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split(" ")[1]
+    
+    # Here you could implement token blacklisting or invalidation
+    # For example, add the token to a Redis blacklist with its expiry time
+    
     response = JSONResponse(content={"message": "Successfully logged out"})
     response.delete_cookie(key="authorization")
     return response

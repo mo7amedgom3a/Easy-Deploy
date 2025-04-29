@@ -1,17 +1,25 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { HOST, PORT, API_URL } from "@/lib/constants";
+import { API_URL } from "@/lib/constants";
 
 const LOGOUT_ENDPOINT = `${API_URL}/auth/logout`;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
+      // Get token from authorization header
+      const token = req.headers.authorization?.split(' ')[1];
+      
+      if (!token) {
+        // If no token provided, still return success as we're logging out anyway
+        return res.status(200).json({ message: 'Client logout successful' });
+      }
+      
       // Clear token from server-side cookies if any
       const response = await fetch(`${LOGOUT_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${req.headers.authorization?.split(' ')[1]}`, // Get the token from the request headers
+          'Authorization': `Bearer ${token}`,
         },
       });
 
