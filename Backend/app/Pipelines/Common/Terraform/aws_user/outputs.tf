@@ -1,6 +1,4 @@
-output "user_github_id" {
-  value = var.user_github_id
-}
+
 
 output "iam_role_arn" {
   value = aws_iam_role.user_role.arn

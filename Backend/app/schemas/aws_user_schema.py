@@ -17,7 +17,7 @@ class AWSUserSchema(BaseModel):
     class Config:
         from_attributes = True
         populate_by_name = True
-        from_attributes=True
+        orm_mode=True 
         arbitrary_types_allowed = True
         json_encoders = {
             str: lambda v: v,

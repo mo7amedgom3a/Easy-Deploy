@@ -1,15 +1,13 @@
 # Create an ECS cluster
 provider "aws" {
   region = var.aws_region
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
 }
 
-resource "aws_ecs_cluster" "ecs_cluster" {
-  name = var.aws_ecs_cluster_name
+  resource "aws_ecs_cluster" "ecs_cluster" {
+  name = "ecs-cluster-${var.user_github_id}"
 }
 resource "aws_ecr_repository" "app_repo" {
-  name = var.repo_name
+  name = "${var.repo_name}-${var.user_github_id}"
   image_scanning_configuration {
     scan_on_push = true
   }

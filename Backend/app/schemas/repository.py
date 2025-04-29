@@ -12,4 +12,6 @@ class RepositorySchema(BaseModel):
     default_branch: Optional[str] = None
     blob_sha: Optional[str] = None
     description: Optional[str] = None
-    languages: Optional[List[str]] = None
+    languages: Optional[List[str]] = None  # Changed to List[str] only
+    language: Optional[str] = None
+ 

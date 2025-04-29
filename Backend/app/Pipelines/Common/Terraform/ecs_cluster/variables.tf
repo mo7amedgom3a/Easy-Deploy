@@ -2,21 +2,16 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
+variable "user_github_id" {
+  type        = string
+  description = "GitHub ID of the user"
+}
+
 variable "key_pair_name" {
   description = "EC2 Key Pair name"
   type        = string
 }
-variable "aws_access_key" {
-  description = "AWS IAM user access key"
-  type        = string
-  sensitive   = true
-}
 
-variable "aws_secret_key" {
-  description = "AWS IAM user secret key"
-  type        = string
-  sensitive   = true
-}
 variable "aws_ecs_cluster_name" {
   description = "Name of the ECS cluster"
   type        = string
@@ -84,6 +79,7 @@ variable "availability_zones" {
 variable "repo_name" {
   description = "Name of the ECR repository"
   type        = string
+  default = "my-app"
 }
 variable "ecs_task_family" {
   description = "Family name for the ECS task definition"
@@ -107,13 +103,13 @@ variable "aws_ecs_task_container_name" {
 variable "ecs_task_container_port" {
   description = "Container port for the ECS task definition"
   type        = number
- 
+  default     = 5000
 }
 
 variable "ecs_task_host_port" {
   description = "Host port for the ECS task definition"
   type        = number
- 
+  default     = 5000
 }
 
 variable "ecs_task_protocol" {

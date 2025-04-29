@@ -8,11 +8,16 @@ from typing import List
 class GitRepository(GitRepositoryInterface):
     def __init__(self, db: DatabaseConnection):
         self.db = db
+        self.collection = "repositories"
 
     async def save_repo(self, owner:str, repo:dict) -> dict:
         repo_data = RepositorySchema(owner=owner, **repo)
-        await self.db.save("repositories", repo_data.dict())
-        return repo_data.dict()
+        collection = await self.db.get_collection(self.collection)
+        result = await collection.insert_one(repo_data.dict())
+        if result.inserted_id:
+            return repo_data.dict()
+        else:
+            raise Exception("Failed to save repository")
     
     async def save_repositories(self, owner_id: str, repos: List[dict]) -> None:
         for repo in repos:

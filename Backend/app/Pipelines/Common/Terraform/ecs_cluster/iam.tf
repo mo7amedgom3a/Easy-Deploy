@@ -38,21 +38,26 @@ resource "aws_iam_policy" "ecs_access_policy" {
       {
         Effect = "Allow",
         Action = [
-          "ecs:Describe*",
-          "ecs:List*",
-          "ecs:UpdateService",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeSubnets",
-          
-          "ecs:RunTask",
-          "ecs:StopTask",
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
+          "ecs:*",
+          "ecr:*",
+          "ec2:*",
+          "elasticloadbalancing:*",
+          "iam:GetRole",
+          "iam:GetPolicy",
+          "iam:ListRoles",
+          "iam:ListPolicies",
+          "iam:PassRole",
+          "iam:GetGroup",
+          "iam:ListGroups",
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:GetParametersByPath",
+          "ssm:DescribeParameters",
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
         ],
         Resource = "*"
       }
@@ -67,28 +72,4 @@ resource "aws_iam_group_policy_attachment" "attach_policy_to_group" {
 
 resource "aws_iam_access_key" "user_key" {
   user = aws_iam_user.user.name
-}
-
-data "aws_caller_identity" "current" {}
-
-output "user_github_id" {
-  value = var.user_github_id
-}
-
-output "iam_role_arn" {
-  value = aws_iam_role.user_role.arn
-}
-
-output "aws_access_key" {
-  value     = aws_iam_access_key.user_key.id
-  sensitive = true
-}
-
-output "aws_secret_access_key" {
-  value     = aws_iam_access_key.user_key.secret
-  sensitive = true
-}
-
-output "aws_account_id" {
-  value = data.aws_caller_identity.current.account_id
 }

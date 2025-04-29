@@ -10,6 +10,7 @@ class Repository(BaseModel):
     updated_at: str
     pushed_at: str
     default_branch: str
+    root_folder: str
     blob_sha: str
     description: str | None = None
     languages: List[str] | None = None

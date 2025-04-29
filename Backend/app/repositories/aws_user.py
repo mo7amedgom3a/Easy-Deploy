@@ -8,10 +8,10 @@ class AWSUserRepository:
 
     async def create_user(self, user: AWSUser) -> AWSUserSchema:
         collection = await self.db.get_collection("aws_users")
-
-        user_data = user.model_dump()
-        result = await collection.insert_one(user_data)
-        return AWSUserSchema(id=str(result.inserted_id), **user_data)
+        
+        user_dict = user.dict()
+        result = await collection.insert_one(user_dict)
+        return AWSUserSchema(id=str(result.inserted_id), **user_dict)
     
 
     async def get_user(self, user_id: str) -> AWSUserSchema:
@@ -29,7 +29,7 @@ class AWSUserRepository:
 
     async def update_user(self, user: AWSUser) -> AWSUserSchema:
         collection = await self.db.get_collection("aws_users")
-        user_data = user.model_dump()
+        user_data = user.dict()
         result = await collection.update_one({"_id": user.user_github_id}, {"$set": user_data})
         if result.modified_count == 0:
             return None
