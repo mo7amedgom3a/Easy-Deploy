@@ -7,6 +7,7 @@ import {
   Github,
   LayoutDashboard,
   LifeBuoy,
+  LogOut,
   Rocket,
   Settings,
   Users,
@@ -22,11 +23,39 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { LogoutButton } from "@/components/logout-button"
+import { useRouter } from "next/navigation"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  
+  const handleLogout = async () => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("token")
+      
+      // Call the logout API
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      // Remove the token from localStorage regardless of API response
+      localStorage.removeItem("token")
+      
+      // Redirect to the home page
+      router.push("/")
+    } catch (error) {
+      console.error("Logout error:", error)
+      // Still clear local storage and redirect even if the API call fails
+      localStorage.removeItem("token")
+      router.push("/")
+    }
+  }
 
   return (
     <Sidebar variant={isMobile ? "default" : "floating"} collapsible="icon">
@@ -133,9 +162,10 @@ export function DashboardSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="px-2">
-              <LogoutButton />
-            </div>
+            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
