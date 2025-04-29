@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from services.oauth import get_github_user
 from services.user import UserService
 
@@ -10,6 +10,19 @@ from dependencies.security import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+@router.get("/logout")
+async def logout():
+    response = JSONResponse(content={"message": "Successfully logged out"})
+    response.delete_cookie(key="authorization")
+    return response
+
+@router.post("/logout")
+async def logout_post():
+    # Handle POST request from frontend logout API
+    response = JSONResponse(content={"message": "Successfully logged out"})
+    response.delete_cookie(key="authorization")
+    return response
 
 @router.get("/login")
 async def login():    

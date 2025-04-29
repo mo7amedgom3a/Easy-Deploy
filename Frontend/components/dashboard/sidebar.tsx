@@ -7,7 +7,6 @@ import {
   Github,
   LayoutDashboard,
   LifeBuoy,
-  LogOut,
   Rocket,
   Settings,
   Users,
@@ -23,25 +22,11 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { LogoutButton } from "@/components/logout-button"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/logout', {
-        method: 'POST',
-      });
-      if (response.ok) {
-        window.location.href = '/login'; // Redirect to login page after successful logout
-      } else {
-        console.error('Logout failed');
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-  };
 
   return (
     <Sidebar variant={isMobile ? "default" : "floating"} collapsible="icon">
@@ -148,10 +133,9 @@ export function DashboardSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Log out">
-              <LogOut className="h-4 w-4" />
-              <span>Log out</span>
-            </SidebarMenuButton>
+            <div className="px-2">
+              <LogoutButton />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

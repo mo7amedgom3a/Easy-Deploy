@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { Bell, ChevronDown, Menu, Plus, Search, Settings, User, LogOut } from "lucide-react"
+import { Bell, ChevronDown, Menu, Plus, Search, Settings, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LogoutButton } from "@/components/logout-button"
 
 export function DashboardHeader() {
   const { isMobile } = useSidebar()
@@ -109,11 +110,8 @@ export function DashboardHeader() {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/logout">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </Link>
+              <DropdownMenuItem>
+                <LogoutButton />
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
