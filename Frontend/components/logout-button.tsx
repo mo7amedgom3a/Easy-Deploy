@@ -18,6 +18,8 @@ export function LogoutButton() {
       // Get token from localStorage
       const token = localStorage.getItem("token") || ""
       
+      console.log("Initiating logout process")
+      
       // Call the logout API
       const response = await fetch('/api/logout', {
         method: 'POST',
@@ -27,10 +29,19 @@ export function LogoutButton() {
         }
       })
       
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Logout API response:", data.message)
+      } else {
+        console.error("Logout API error:", response.status, response.statusText)
+      }
+      
       // Remove the token from localStorage
       localStorage.removeItem("token")
+      console.log("Token removed from localStorage")
       
       // Redirect to the home page
+      console.log("Redirecting to home page")
       router.push("/")
       router.refresh() // Force refresh to update UI state
     } catch (error) {
