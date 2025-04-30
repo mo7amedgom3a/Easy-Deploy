@@ -5,20 +5,34 @@ import logging
 logger = logging.getLogger('uvicorn.error')
 
 class DatabaseConnection:
-    def __init__(self):
-        self.client = None
-        self.database_url = settings.DATABASE_URL
-        self.local_database_url = settings.LOCAL_DATABASE_URL
+    _instance = None
+    _client = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(DatabaseConnection, cls).__new__(cls)
+            cls._instance.database_url = settings.DATABASE_URL
+            cls._instance.local_database_url = settings.LOCAL_DATABASE_URL
+        return cls._instance
+
+    @property
+    def client(self):
+        return self.__class__._client
+
+    @client.setter
+    def client(self, value):
+        self.__class__._client = value
 
     async def connect(self):
-        try:
-            self.client = AsyncIOMotorClient(self.database_url)
-            # Trigger a server selection to ensure connection
-            await self.client.server_info()
-            await self.client.admin.command('ping')
-            logger.info("Connected to MongoDB Successfully")
-        except Exception as e:
-            logger.error(f"Error while connected to MongoDB: {e}")
+        if self.client is None:  # Only connect if no client exists
+            try:
+                self.client = AsyncIOMotorClient(self.database_url)
+                # Trigger a server selection to ensure connection
+                await self.client.server_info()
+                await self.client.admin.command('ping')
+                logger.info("Connected to MongoDB Successfully")
+            except Exception as e:
+                logger.error(f"Error while connected to MongoDB: {e}")
     
     async def get_database(self):
         if not self.client:
@@ -33,6 +47,7 @@ class DatabaseConnection:
     async def close(self):
         if self.client:
             self.client.close()
+            self.client = None
     
     async def __aenter__(self):
         await self.connect()
