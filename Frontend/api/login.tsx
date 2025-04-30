@@ -1,9 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { HOST, PORT, API_URL } from "@/lib/constants";
+import { API_URL } from "@/lib/constants";
 
-const LOGIN_ENDPOINT = `${API_URL}/github/callback`;
+const LOGIN_ENDPOINT = `${API_URL}/auth/github/callback`;
 
 const GitHubCallback = () => {
     const router = useRouter();
