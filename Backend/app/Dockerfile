@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 
+# Install system dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
