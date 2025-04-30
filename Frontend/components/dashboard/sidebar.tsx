@@ -23,25 +23,56 @@ import {
   SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { useState } from "react" // Import useState
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false) // Add state for disabling button
 
   const handleLogout = async () => {
+    if (isLoggingOut) return // Prevent multiple clicks
+    setIsLoggingOut(true)
+    console.log("Sidebar logout initiated") // Add log
+
     try {
+      // Get token from localStorage
+      const token = localStorage.getItem("token") || ""
+
+      // Call the Next.js API route and WAIT
       const response = await fetch('/api/logout', {
         method: 'POST',
-      });
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
       if (response.ok) {
-        window.location.href = '/login'; // Redirect to login page after successful logout
+        const data = await response.json()
+        console.log("Sidebar logout API response:", data.message)
       } else {
-        console.error('Logout failed');
+        console.error("Sidebar logout API error:", response.status, response.statusText)
       }
+
+      // Always remove token and redirect, even if API fails
+      localStorage.removeItem("token")
+      console.log("Sidebar token removed")
+      router.push("/")
+      router.refresh() // Refresh to ensure state is cleared
+      console.log("Sidebar redirected to home")
+
     } catch (error) {
-      console.error('Error during logout:', error);
+      console.error("Sidebar logout error:", error)
+      // Still clear local storage and redirect even if the API call fails
+      localStorage.removeItem("token")
+      router.push("/")
+    } finally {
+      setIsLoggingOut(false) // Re-enable button
     }
-  };
+  }
 
   return (
     <Sidebar variant={isMobile ? "default" : "floating"} collapsible="icon">
@@ -148,9 +179,10 @@ export function DashboardSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Log out">
+            {/* Update the button to use the refined handler and disable state */}
+            <SidebarMenuButton onClick={handleLogout} tooltip="Logout" disabled={isLoggingOut}>
               <LogOut className="h-4 w-4" />
-              <span>Log out</span>
+              <span>{isLoggingOut ? "Logging out..." : "Logout"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

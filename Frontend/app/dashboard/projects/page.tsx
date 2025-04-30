@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,8 +12,10 @@ export default function ProjectsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" /> New Project
+        <Button className="gap-2" asChild>
+          <Link href="/dashboard/projects/new">
+            <Plus className="h-4 w-4" /> New Project
+          </Link>
         </Button>
       </div>
 
