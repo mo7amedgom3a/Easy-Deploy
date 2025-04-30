@@ -20,7 +20,7 @@ export function LogoutButton() {
       
       console.log("Initiating logout process")
       
-      // Call the logout API
+      // Call the logout API and WAIT for the response
       const response = await fetch('/api/logout', {
         method: 'POST',
         headers: {
@@ -32,18 +32,21 @@ export function LogoutButton() {
       if (response.ok) {
         const data = await response.json()
         console.log("Logout API response:", data.message)
+        
+        // Only remove token AFTER successful API response
+        localStorage.removeItem("token")
+        console.log("Token removed from localStorage")
+        
+        // Redirect to home page AFTER logout is complete
+        console.log("Redirecting to home page")
+        router.push("/")
+        router.refresh() // Force refresh to update UI state
       } else {
         console.error("Logout API error:", response.status, response.statusText)
+        // If API call fails, still log out locally
+        localStorage.removeItem("token")
+        router.push("/")
       }
-      
-      // Remove the token from localStorage
-      localStorage.removeItem("token")
-      console.log("Token removed from localStorage")
-      
-      // Redirect to the home page
-      console.log("Redirecting to home page")
-      router.push("/")
-      router.refresh() // Force refresh to update UI state
     } catch (error) {
       console.error("Logout error:", error)
       // Still clear local storage and redirect even if the API call fails
