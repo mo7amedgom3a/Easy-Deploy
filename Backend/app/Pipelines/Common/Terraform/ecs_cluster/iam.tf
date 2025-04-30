@@ -4,7 +4,7 @@ resource "aws_iam_user" "user" {
 }
 
 resource "aws_iam_group" "user_group" {
-  name = "github-${var.user_github_id}-group"
+  name = "users-group"
 }
 
 resource "aws_iam_group_membership" "user_membership" {
@@ -22,7 +22,7 @@ resource "aws_iam_role" "user_role" {
       Effect = "Allow",
       Principal = {
         AWS = aws_iam_user.user.arn
-      }
+      },
       Action = "sts:AssumeRole"
     }]
   })

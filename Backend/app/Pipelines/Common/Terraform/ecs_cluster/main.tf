@@ -12,7 +12,6 @@ resource "aws_ecr_repository" "app_repo" {
     scan_on_push = true
   }
   force_delete = true
-  
 }
 
 resource "aws_iam_role" "aws_ecs_instance_role" {
@@ -88,8 +87,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       essential = true
       portMappings = [
         {
-          containerPort = 5000
-          hostPort      = 5000
+          containerPort = var.ecs_task_container_port
+          hostPort      = var.ecs_task_host_port
           protocol      = "tcp"
         }
       ]
@@ -124,7 +123,7 @@ resource "aws_ecs_service" "ecs_service" {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     
     container_name   = var.aws_ecs_task_container_name
-    container_port   = 5000
+    container_port   = var.ecs_task_container_port
   }
   depends_on = [
     aws_lb_listener.ecs_nlb_listener,

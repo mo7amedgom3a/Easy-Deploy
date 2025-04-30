@@ -3,16 +3,20 @@ from typing import Optional, List
 from datetime import datetime
 
 class Deploy(BaseModel):
-    aws_user_id: str
+    user_github_id: str
     repo_id: str
+    repo_name:str
+    owner: str
     branch: str
-    pipline_path: str
-    freamework: str
+    pipline_path: Optional[str] = None  # path to the pipeline file
+    framework: Optional[str] = None  # e.g., "flask", "django", etc.
     root_folder_path: str
-    webhook_id: str
-    status: str
-    app_entry_point: str  # e.g., "main.py" or "app.py"
-    port: Optional[int] = None  # port on which the application runs
+    build_command: Optional[str] = None  
+    run_command: Optional[str] = None 
+    webhook_id: Optional[str] = None
+    status: Optional[str] = None  # e.g., "pending", "in_progress", "completed", "failed"
+    app_entry_point: Optional[str] = None  # e.g., "main.py" or "app.py"
+    port: Optional[int] = None 
     environment_variables: Optional[dict] = None  # environment variables for the application
     created_at: datetime = datetime.now()
     updated_at: Optional[datetime] = None

@@ -2,7 +2,6 @@ from repositories.aws_user import AWSUserRepository
 
 from models.aws_user import AWSUser
 from schemas.aws_user_schema import AWSUserSchema
-from models.aws_user import AWSUser
 from typing import List, Optional
 from schemas.user_schema import UserSchema
 from python_terraform import Terraform
