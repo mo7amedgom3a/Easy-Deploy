@@ -33,7 +33,7 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t easy-deploy-backend app/
+        docker build -t easy-deploy-backend Backend/app
         docker tag easy-deploy-backend:latest $ECR_REPO_URL:$IMAGE_TAG
         docker push $ECR_REPO_URL:$IMAGE_TAG
     # allow ecs to force pull latest image
