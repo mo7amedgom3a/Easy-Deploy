@@ -35,10 +35,10 @@ async def logout_post(authorization: Optional[str] = Header(None)):
 
 @router.get("/login")
 async def login():    
-    
+    # Updated GitHub scope to ensure proper repository and user access
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
-        f"?client_id={settings.CLIENT_ID}&redirect_uri={settings.REDIRECT_URI}&scope=repo:status read:repo_hook"
+        f"?client_id={settings.CLIENT_ID}&redirect_uri={settings.REDIRECT_URI}&scope=repo user"
     )
     return RedirectResponse(github_auth_url)
 
@@ -51,6 +51,10 @@ async def github_callback(request: Request, code: str, user_service: UserService
     user_data = await get_github_user(code)
     if not user_data:
         raise HTTPException(status_code=400, detail="GitHub authentication failed")
+    
+    # Debug logging to help diagnose issues
+    print(f"GitHub user data received: {user_data.keys()}")
+    
     user_data["id"] = str(user_data.get("id"))
     user = await user_service.get_or_create_user(user_data)
     if not user:

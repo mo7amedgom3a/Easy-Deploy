@@ -31,6 +31,8 @@
     --radius: 0.5rem;
     --navbar-bg: 215 30% 15%;
     --navbar-text: 221, 83%, 53%;
+    --slider-gradient-from: white;
+    --slider-gradient-to: rgba(255, 255, 255, 0);
   }
 
   .dark {
@@ -60,6 +62,8 @@
     --chart-5: 340 75% 55%;
     --navbar-bg: 215 30% 12%;
     --navbar-text: 221, 40%, 98%;
+    --slider-gradient-from: #0D0D0D;
+    --slider-gradient-to: rgba(13, 13, 13, 0);
 
     /* Dashboard accessories color */
     --dashboard-accent: 240 3% 10%;

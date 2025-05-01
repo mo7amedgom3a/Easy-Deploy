@@ -38,7 +38,7 @@ export default function InfiniteIconSlider() {
   }, [controls]);
 
   return (
-    <div className="relative m-auto overflow-hidden before:absolute before:left-0 before:top-0 before:z-[2] before:h-full before:w-[100px] before:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] before:content-[''] after:absolute after:right-0 after:top-0 after:z-[2] after:h-full after:w-[100px] after:-scale-x-100 after:bg-[linear-gradient(to_right,white_0%,rgba(255,255,255,0)_100%)] after:content-['']">
+    <div className="relative m-auto overflow-hidden before:absolute before:left-0 before:top-0 before:z-[2] before:h-full before:w-[100px] before:bg-[linear-gradient(to_right,var(--slider-gradient-from)_0%,var(--slider-gradient-to)_100%)] before:content-[''] after:absolute after:right-0 after:top-0 after:z-[2] after:h-full after:w-[100px] after:-scale-x-100 after:bg-[linear-gradient(to_right,var(--slider-gradient-from)_0%,var(--slider-gradient-to)_100%)] after:content-['']">
       <div
         ref={sliderRef}
         className="flex"
@@ -57,7 +57,7 @@ export default function InfiniteIconSlider() {
                 alt={item.name}
                 className="w-10 h-10 text-gray-700 group-hover:text-blue-600 transition-colors duration-300"
               />
-              <span className="mt-2 text-sm text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
+              <span className="mt-2 text-sm text-gray-600 dark:text-gray-300 group-hover:text-blue-600 transition-colors duration-300">
                 {item.name}
               </span>
             </div>

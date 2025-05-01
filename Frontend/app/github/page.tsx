@@ -1,16 +1,20 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react" // Import useRef
 import { useRouter } from "next/navigation"
 import { API_URL } from "@/lib/constants"
+import { useAuth } from "@/lib/auth"
+import "./github-auth.css"
 
 const LOGIN_ENDPOINT = `${API_URL}/auth/github/callback`
 
 const GitHubCallback = () => {
   const router = useRouter()
+  const { login } = useAuth()
   const [stage, setStage] = useState(0)
   const [dots, setDots] = useState("")
   const [error, setError] = useState("")
+  const fetchRan = useRef(false) // Add ref to track if fetch ran
 
   // Animate loading dots
   useEffect(() => {
@@ -23,6 +27,12 @@ const GitHubCallback = () => {
 
   // GitHub OAuth logic
   useEffect(() => {
+    // Prevent running fetchToken twice in development due to Strict Mode
+    if (fetchRan.current) {
+      return
+    }
+    fetchRan.current = true
+
     const fetchToken = async () => {
       try {
         setStage(1) // Connecting to GitHub
@@ -35,9 +45,22 @@ const GitHubCallback = () => {
         
         setStage(2) // Authenticating
         
-        const res = await fetch(`${LOGIN_ENDPOINT}?code=${code}`)
+        console.log(`Sending authentication request to ${LOGIN_ENDPOINT}?code=${code}`)
+        const res = await fetch(`${LOGIN_ENDPOINT}?code=${code}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
         
         setStage(3) // Verifying credentials
+        
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error(`Authentication error (${res.status}):`, errorText)
+          setError(`Authentication failed: ${res.status} ${res.statusText} - ${errorText}`)
+          return
+        }
         
         const data = await res.json()
         
@@ -45,10 +68,10 @@ const GitHubCallback = () => {
         
         if (data.jwt_token) {
           setStage(5) // Generating token
+          console.log("Token received, storing securely")
           
-          if (typeof window !== 'undefined') {
-            localStorage.setItem("token", data.jwt_token)
-          }
+          // Use the auth context to securely store token
+          login(data.jwt_token)
           
           setStage(6) // Redirecting
           
@@ -57,17 +80,18 @@ const GitHubCallback = () => {
             router.push("/dashboard")
           }, 1000)
         } else {
-          setError("Authentication failed")
+          setError("Authentication failed: No token received")
           console.error("Login failed", data)
         }
       } catch (error) {
         setError("An error occurred during authentication")
-        console.error("Callback error", error)
+        console.error("Callback error:", error)
       }
     }
 
-    fetchToken()
-  }, [router])
+    fetchToken() // Call fetchToken
+
+  }, [router, login])
 
   return (
     <div className="github-auth-container">
@@ -155,7 +179,26 @@ const GitHubCallback = () => {
 
       <div className="auth-message">
         {error ? (
-          "Authentication failed. Please try again."
+          <>
+            Authentication failed. Please try again.
+            <div style={{ marginTop: '10px' }}>
+              <button 
+                onClick={() => window.location.href='/api/auth/login'} 
+                className="retry-button"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#238636',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Retry Authentication
+              </button>
+            </div>
+          </>
         ) : stage < 6 ? (
           "Please wait while we authenticate your GitHub account"
         ) : (

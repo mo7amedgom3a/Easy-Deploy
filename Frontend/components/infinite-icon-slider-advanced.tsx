@@ -58,7 +58,7 @@ export default function InfiniteIconSliderAdvanced() {
 
   return (
     <div className="w-full max-w-4xl">
-      <div className="bg-white rounded-xl shadow-lg p-6 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 overflow-hidden">
         <div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <motion.div
             className="flex space-x-12 py-4"
@@ -86,9 +86,9 @@ export default function InfiniteIconSliderAdvanced() {
               <div key={`${item.name}-${index}`} className="flex flex-col items-center justify-center group">
                 <item.Icon
                   size={40}
-                  className="text-gray-700 group-hover:text-blue-600 transition-colors duration-300"
+                  className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 transition-colors duration-300"
                 />
-                <span className="mt-2 text-sm text-gray-600 group-hover:text-blue-600 transition-colors duration-300">
+                <span className="mt-2 text-sm text-gray-600 dark:text-gray-300 group-hover:text-blue-600 transition-colors duration-300">
                   {item.name}
                 </span>
               </div>
