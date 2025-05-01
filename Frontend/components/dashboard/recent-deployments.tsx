@@ -1,10 +1,60 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CheckCircle2, Clock, ExternalLink, RotateCcw, XCircle } from "lucide-react"
+import { Deployment, deploymentsService } from "@/lib/services"
 
 export function RecentDeployments() {
+  const [deployments, setDeployments] = useState<Deployment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDeployments = async () => {
+      setIsLoading(true);
+      try {
+        const data = await deploymentsService.getRecentDeployments(5);
+        setDeployments(data);
+      } catch (error) {
+        console.error("Error fetching recent deployments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDeployments();
+  }, []);
+
+  const handleRedeploy = async (deploymentId: string) => {
+    try {
+      await deploymentsService.redeploy(deploymentId);
+      // Refresh the list after redeploying
+      const data = await deploymentsService.getRecentDeployments(5);
+      setDeployments(data);
+    } catch (error) {
+      console.error(`Error redeploying deployment ${deploymentId}:`, error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="w-full p-8 flex justify-center">
+        <div className="animate-spin w-6 h-6 border-2 border-primary rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (deployments.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No deployments found</p>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full overflow-auto">
       <Table>
@@ -22,7 +72,7 @@ export function RecentDeployments() {
           {deployments.map((deployment) => (
             <TableRow key={deployment.id}>
               <TableCell className="font-medium">
-                <Link href={`/dashboard/projects/${deployment.id}`} className="hover:underline">
+                <Link href={`/dashboard/projects/${deployment.projectId}`} className="hover:underline">
                   {deployment.project}
                 </Link>
               </TableCell>
@@ -52,11 +102,19 @@ export function RecentDeployments() {
                       </Badge>
                     </>
                   )}
+                  {deployment.status === "canceled" && (
+                    <>
+                      <XCircle className="h-4 w-4 text-gray-500" />
+                      <Badge variant="outline" className="bg-gray-50 text-gray-700 hover:bg-gray-50">
+                        Canceled
+                      </Badge>
+                    </>
+                  )}
                 </div>
               </TableCell>
               <TableCell>{deployment.branch}</TableCell>
               <TableCell className="font-mono text-xs">{deployment.commit.substring(0, 7)}</TableCell>
-              <TableCell>{deployment.time}</TableCell>
+              <TableCell>{deployment.time || deployment.timestamp}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" size="icon" className="h-8 w-8" asChild>
@@ -65,11 +123,15 @@ export function RecentDeployments() {
                       <span className="sr-only">View deployment</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                    <Link href={`/dashboard/deployments/${deployment.id}/redeploy`}>
-                      <RotateCcw className="h-4 w-4" />
-                      <span className="sr-only">Redeploy</span>
-                    </Link>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8" 
+                    onClick={() => handleRedeploy(deployment.id)}
+                    disabled={deployment.status === "building"}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="sr-only">Redeploy</span>
                   </Button>
                 </div>
               </TableCell>
@@ -80,47 +142,4 @@ export function RecentDeployments() {
     </div>
   )
 }
-
-const deployments = [
-  {
-    id: "1",
-    project: "E-commerce Frontend",
-    status: "success",
-    branch: "main",
-    commit: "a1b2c3d4e5f6g7h8i9j0",
-    time: "2 minutes ago",
-  },
-  {
-    id: "2",
-    project: "API Backend",
-    status: "failed",
-    branch: "feature/auth",
-    commit: "b2c3d4e5f6g7h8i9j0k1",
-    time: "15 minutes ago",
-  },
-  {
-    id: "3",
-    project: "Marketing Website",
-    status: "success",
-    branch: "main",
-    commit: "c3d4e5f6g7h8i9j0k1l2",
-    time: "1 hour ago",
-  },
-  {
-    id: "4",
-    project: "Admin Dashboard",
-    status: "building",
-    branch: "develop",
-    commit: "d4e5f6g7h8i9j0k1l2m3",
-    time: "just now",
-  },
-  {
-    id: "5",
-    project: "Mobile App Backend",
-    status: "success",
-    branch: "main",
-    commit: "e5f6g7h8i9j0k1l2m3n4",
-    time: "3 hours ago",
-  },
-]
 
