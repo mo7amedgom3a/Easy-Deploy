@@ -14,6 +14,7 @@ async def get_github_user(code: str):
                     "client_secret": settings.CLIENT_SECRET,
                     "code": code,
                     "redirect_uri": settings.REDIRECT_URI,
+                    "scope": "admin:repo_hook repo",
                 },
                 timeout=10.0  # Add timeout to prevent hanging requests
             )
