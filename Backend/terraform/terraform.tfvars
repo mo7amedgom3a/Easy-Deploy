@@ -1,1 +1,2 @@
-key_pair_name = "ecs_key_pair"
+public_key_path  = "~/.ssh/id_rsa.pub"
+private_key_path = "~/.ssh/id_rsa"

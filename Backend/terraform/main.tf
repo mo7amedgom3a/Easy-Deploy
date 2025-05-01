@@ -118,8 +118,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       essential = true
       portMappings = [
         {
-          containerPort = 5000
-          hostPort      = 5000
+          containerPort = var.aws_ecs_task_container_port
+          hostPort      = var.aws_ecs_task_host_port
           protocol      = "tcp"
         }
       ]
@@ -157,7 +157,7 @@ resource "aws_ecs_service" "ecs_service" {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     
     container_name   = var.aws_ecs_task_container_name
-    container_port   = 5000
+    container_port   = var.aws_ecs_task_container_port
   }
 
   depends_on = [aws_autoscaling_group.ecs_asg]

@@ -2,10 +2,20 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
-variable "key_pair_name" {
-  description = "EC2 Key Pair name"
+
+variable "public_key_path" {
+  description = "Path to your public SSH key"
+  default     = "~/.ssh/id_rsa.pub"
   type        = string
 }
+
+
+variable "private_key_path" {
+  description = "Path to your private SSH key"
+  default = "~/.ssh/id_rsa"
+  type        = string
+}
+
 variable "aws_ecs_cluster_name" {
   description = "Name of the ECS cluster"
   type        = string
@@ -94,16 +104,16 @@ variable "aws_ecs_task_container_name" {
   default     = "dockergs"
 }
 
-variable "ecs_task_container_port" {
+variable "aws_ecs_task_container_port" {
   description = "Container port for the ECS task definition"
   type        = number
-  default     = 5000
+  
 }
 
-variable "ecs_task_host_port" {
+variable "aws_ecs_task_host_port" {
   description = "Host port for the ECS task definition"
   type        = number
-  default     = 5000
+  
 }
 
 variable "ecs_task_protocol" {

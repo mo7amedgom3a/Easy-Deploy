@@ -1,0 +1,72 @@
+{
+    "backend": {
+        "flask": {
+            "port": "5000",
+            "entry_point": "app.py",
+            "build_command": "pip install -r requirements.txt",
+            "run_command": "python"
+        },
+        "django": {
+            "port": "8000",
+            "entry_point": "manage.py",
+            "build_command": "pip install -r requirements.txt",
+            "run_command": "python"
+        },
+        "fastapi": {
+            "port": "8000",
+            "entry_point": "main.py",
+            "build_command": "pip install -r requirements.txt",
+            "run_command": "uvicorn"
+        },
+        "express": {
+            "port": "3000",
+            "entry_point": "app.js",
+            "build_command": "npm install",
+            "run_command": "node"
+        },
+        "nestjs": {
+            "port": "3000",
+            "entry_point": "src/main.ts",
+            "build_command": "npm install && npm run build",
+            "run_command": "npm run start"
+        },
+        "spring-boot": {
+            "port": "8080",
+            "entry_point": "src/main/java/com/example/Application.java",
+            "build_command": "mvn clean install",
+            "run_command": "mvn spring-boot:run"
+        },
+        "laravel": {
+            "port": "8000",
+            "entry_point": "public/index.php",
+            "build_command": "composer install",
+            "run_command": "php artisan serve"
+        }
+    },
+    "frontend": {
+        "react": {
+            "port": "3000",
+            "entry_point": "src/index.js",
+            "build_command": "npm install",
+            "run_command": "npm start"
+        },
+        "angular": {
+            "port": "4200",
+            "entry_point": "src/main.ts",
+            "build_command": "npm install",
+            "run_command": "ng serve"
+        },
+        "vue": {
+            "port": "8080",
+            "entry_point": "src/main.js",
+            "build_command": "npm install",
+            "run_command": "npm run serve"
+        },
+        "next": {
+            "port": "3000",
+            "entry_point": "pages/index.js",
+            "build_command": "npm install",
+            "run_command": "npm run dev"
+        }
+    }
+}
