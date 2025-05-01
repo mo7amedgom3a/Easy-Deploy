@@ -80,7 +80,7 @@ resource "aws_lb_listener" "ecs_alb_listener" {
 
 resource "aws_lb_target_group" "ecs_tg" {
   name        = var.aws_target_group
-  port        = 5000
+  port        = var.aws_ecs_task_container_port
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = aws_vpc.main.id
