@@ -3,8 +3,9 @@ import { cookies } from 'next/headers';
 
 export async function GET() {
   try {
-    // Get the token from cookies
-    const token = cookies().get('authToken')?.value;
+    // Get the token from cookies - properly awaiting cookies()
+    const cookieStore = await cookies();
+    const token = cookieStore.get('authToken')?.value;
     
     if (!token) {
       return NextResponse.json({ token: null });
