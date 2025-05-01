@@ -56,18 +56,18 @@ resource "aws_security_group" "security_group" {
     description = "Allow SSH access"
   }
   ingress {
-    from_port       = 5000
-    to_port         = 5000
-    protocol        = "tcp"
+    from_port       = var.aws_ecs_task_container_port
+    to_port         = var.aws_ecs_task_host_port
+    protocol        = "tcp"   
     cidr_blocks = ["0.0.0.0/0"]
     description     = "Allow ALB traffic to ECS container"
   }
   ingress {
     from_port   = 80
-    to_port     = 5000
+    to_port     = var.aws_ecs_task_host_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow traffic from port 80 to 5000"
+    description = "Allow traffic from port 80 to port provided by variable"
   }
   ingress {
     from_port   = 80
@@ -85,8 +85,8 @@ resource "aws_security_group" "security_group" {
   }
 
   egress {
-    from_port   = 5000
-    to_port     = 5000
+    from_port   = var.aws_ecs_task_container_port
+    to_port     = var.aws_ecs_task_host_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow ALB traffic to ECS container egress"
@@ -94,7 +94,7 @@ resource "aws_security_group" "security_group" {
 
   egress {
     from_port   = 80
-    to_port     = 5000
+    to_port     = var.aws_ecs_task_host_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow traffic from port 80 to 5000 egress"

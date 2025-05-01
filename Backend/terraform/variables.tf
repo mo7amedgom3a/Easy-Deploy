@@ -107,12 +107,14 @@ variable "aws_ecs_task_container_name" {
 variable "aws_ecs_task_container_port" {
   description = "Container port for the ECS task definition"
   type        = number
+  default = 8000
   
 }
 
 variable "aws_ecs_task_host_port" {
   description = "Host port for the ECS task definition"
   type        = number
+  default = 8000
   
 }
 
