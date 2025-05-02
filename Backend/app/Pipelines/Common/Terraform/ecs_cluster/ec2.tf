@@ -1,13 +1,15 @@
 data "aws_ssm_parameter" "ecs_ami" {
   name = "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
 }
-
+resource "aws_key_pair" "deployer_key" {
+  key_name   = "deployer-key-${var.user_github_id}"
+  public_key = file(var.public_key_path)
+}
 resource "aws_launch_template" "ecs_lt" {
-  name_prefix   = "ecs-template"
-  key_name     = var.key_pair_name  
+  name_prefix   = "ecs-template-${var.user_github_id}"
   image_id = data.aws_ssm_parameter.ecs_ami.value
   instance_type = "t2.micro"
-  
+  key_name     = aws_key_pair.deployer_key.key_name
   
   vpc_security_group_ids = [aws_security_group.security_group.id]
   iam_instance_profile {
@@ -18,7 +20,7 @@ resource "aws_launch_template" "ecs_lt" {
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "ecs-instance"
+      Name = "ecs-instance-${var.user_github_id}"
     }
   }
 
@@ -58,7 +60,7 @@ resource "aws_lb" "ecs_nlb" {
   subnets = [aws_subnet.subnet.id]
 
   tags = {
-    Name = "ecs-nlb"
+    Name = "ecs-nlb-${var.user_github_id}"
   }
 }
 

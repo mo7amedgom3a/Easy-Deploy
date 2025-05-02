@@ -6,10 +6,31 @@ variable "user_github_id" {
   type        = string
   description = "GitHub ID of the user"
 }
+variable "public_key_path" {
+  description = "Path to your public SSH key"
+  default     = "~/.ssh/id_rsa.pub"
+  type        = string
+}
+
+
+variable "private_key_path" {
+  description = "Path to your private SSH key"
+  default     = "~/.ssh/id_rsa"
+  type        = string
+}
+variable "aws_access_key" {
+  description = "AWS Access Key"
+  type        = string
+}
+variable "aws_secret_access_key" {
+  description = "AWS Secret Access Key"
+  type        = string
+}
 
 variable "key_pair_name" {
   description = "EC2 Key Pair name"
   type        = string
+  default     = "ecs-key-pair"
 }
 
 variable "aws_ecs_cluster_name" {
@@ -79,7 +100,7 @@ variable "availability_zones" {
 variable "repo_name" {
   description = "Name of the ECR repository"
   type        = string
-  default = "my-app"
+  
 }
 variable "ecs_task_family" {
   description = "Family name for the ECS task definition"
@@ -103,13 +124,12 @@ variable "aws_ecs_task_container_name" {
 variable "ecs_task_container_port" {
   description = "Container port for the ECS task definition"
   type        = number
-  default     = 5000
 }
 
 variable "ecs_task_host_port" {
   description = "Host port for the ECS task definition"
   type        = number
-  default     = 5000
+
 }
 
 variable "ecs_task_protocol" {
@@ -117,3 +137,23 @@ variable "ecs_task_protocol" {
   type        = string
   default     = "tcp"
 }
+locals {
+  aws_region = var.aws_region
+  user_github_id = var.user_github_id
+  aws_access_key = var.aws_access_key
+  aws_secret_access_key = var.aws_secret_access_key
+  
+  public_key_path = var.public_key_path
+  private_key_path = var.private_key_path
+  
+  aws_ecs_cluster_name = "${var.aws_ecs_cluster_name}-${var.user_github_id}"
+  aws_target_group = "${var.aws_target_group}-${var.user_github_id}"
+  aws_lb_name = "${var.aws_lb_name}-${var.user_github_id}"
+  aws_ecs_instance_profile_name = "${var.aws_ecs_instance_profile_name}-${var.user_github_id}"
+  aws_security_group_name = "${var.aws_security_group_name}-${var.user_github_id}"
+  aws_ecs_service_name = "${var.aws_ecs_service_name}-${var.user_github_id}"
+  ecs_instance_role_name = "${var.ecs_instance_role_name}-${var.user_github_id}"
+  ecs_instance_profile_name = "${var.ecs_instance_profile_name}-${var.user_github_id}"
+  aws_ecs_capacity_provider_name = "${var.aws_ecs_capacity_provider_name}-${var.user_github_id}"
+  ecs_task_family = "${var.ecs_task_family}-${var.user_github_id}"
+  }

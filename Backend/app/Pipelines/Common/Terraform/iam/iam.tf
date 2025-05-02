@@ -50,6 +50,9 @@ resource "aws_iam_policy" "ecs_access_policy" {
           "iam:GetGroup",
           "iam:ListGroups",
           "ssm:GetParameter",
+          "iam:CreateRole",        # Added permission to create roles
+          "iam:PutRolePolicy",     # Added permission to add policies to roles
+          "iam:AttachRolePolicy",  # Added permission to attach policies to roles
           "ssm:GetParameters",
           "ssm:GetParametersByPath",
           "ssm:DescribeParameters",
@@ -72,4 +75,9 @@ resource "aws_iam_group_policy_attachment" "attach_policy_to_group" {
 
 resource "aws_iam_access_key" "user_key" {
   user = aws_iam_user.user.name
+}
+
+resource "aws_iam_user_policy_attachment" "attach_policy_to_user" {
+  user       = aws_iam_user.user.name
+  policy_arn = aws_iam_policy.ecs_access_policy.arn
 }

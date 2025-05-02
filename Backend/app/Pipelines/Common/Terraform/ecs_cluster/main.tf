@@ -1,6 +1,8 @@
 # Create an ECS cluster
 provider "aws" {
   region = var.aws_region
+  # access_key = var.aws_access_key
+  # secret_key = var.aws_secret_access_key
 }
 
   resource "aws_ecs_cluster" "ecs_cluster" {
@@ -15,7 +17,7 @@ resource "aws_ecr_repository" "app_repo" {
 }
 
 resource "aws_iam_role" "aws_ecs_instance_role" {
-  name = "ecs-instance-role"
+  name = "ecs-instance-role-${var.user_github_id}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -44,7 +46,7 @@ resource "aws_iam_instance_profile" "aws_ecs_instance_profile" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecs-task-execution-role"
+  name = "ecs-task-execution-role-${var.user_github_id}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",

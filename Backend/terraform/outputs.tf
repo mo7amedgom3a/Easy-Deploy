@@ -7,4 +7,8 @@ output "account_id" {
 output "ecr_repo_url" {
   value = aws_ecr_repository.app_repo.repository_url
 }
+# load balancer dns
+output "load_balancer_dns" {
+  value = aws_lb.ecs_alb.dns_name
+}
 
