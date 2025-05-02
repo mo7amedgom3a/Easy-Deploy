@@ -64,13 +64,6 @@ resource "aws_security_group" "security_group" {
   }
   ingress {
     from_port   = 80
-    to_port     = var.aws_ecs_task_host_port
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow traffic from port 80 to port provided by variable"
-  }
-  ingress {
-    from_port   = 80
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]

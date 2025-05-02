@@ -83,6 +83,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   port        = var.aws_ecs_task_container_port
   protocol    = "HTTP"
   target_type = "ip"
+  
   vpc_id      = aws_vpc.main.id
 
   health_check {
@@ -91,8 +92,8 @@ resource "aws_lb_target_group" "ecs_tg" {
     timeout             = 5
     healthy_threshold  = 2
     unhealthy_threshold = 2
+    matcher {
+      http_code = "200"
+    }
   }
 }
-
-
-

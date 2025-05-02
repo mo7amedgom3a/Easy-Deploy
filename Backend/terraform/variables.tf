@@ -31,7 +31,7 @@ variable "aws_lb_name" {
   description = "Name of the ECS load balancer"
   type        = string
   default     = "ecs-load-balancer"
-  
+
 }
 variable "aws_ecs_instance_profile_name" {
   description = "Name of the ECS instance profile"
