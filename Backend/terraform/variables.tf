@@ -43,7 +43,6 @@ variable "aws_security_group_name" {
   description = "Name of the security group"
   type        = string
   default     = "ecs-security-group"
-  
 }
 variable "aws_ecs_service_name" {
   description = "Name of the ECS service"
