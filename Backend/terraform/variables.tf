@@ -56,12 +56,6 @@ variable "ecs_instance_role_name" {
   default     = "ecs-instance-role"
 }
 
-variable "ecs_instance_profile_name" {
-  description = "Name of the ECS instance profile"
-  type        = string
-  default     = "ecs-instance-profile"
-}
-
 variable "aws_ecs_capacity_provider_name" {
   description = "Name of the ECS capacity provider"
   type        = string
