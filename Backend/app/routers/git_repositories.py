@@ -3,6 +3,7 @@ from services.git_repository import GitRepositoryService
 from dependencies.security import get_current_user, get_access_key_from_token_payload
 from schemas.repository import RepositorySchema
 from typing import Optional, List
+from schemas.user_schema import UserSchema
 from dependencies.services import get_git_repository_service
 from fastapi.security import OAuth2PasswordBearer
 
@@ -10,27 +11,25 @@ outh_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(prefix="/git", tags=["git"])
 
 
-@router.post("/repository/github-webhook", response_model=None, dependencies=[])  # Remove auth dependency
+@router.post("/repository/github-webhook")  
 async def github_webhook(
-    request: Request,
-    git_repository_service: GitRepositoryService = Depends(get_git_repository_service)
+    request: Request
 ):
     """ trigger github webhook for user repository """
     
     try:
         payload = await request.json()
- 
         
         if payload.get("ref"):
             owner = payload["repository"]["owner"]["login"]
             repo_name = payload["repository"]["name"]
             # Use direct authentication or a configured service token instead of user token
-            await git_repository_service.pull_repository(owner=owner, repo_name=repo_name, access_token=None)
+            
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return {"message": "Webhook received successfully"}
+    return {"message": "Webhook received successfully "}
         
 @router.get("/repository/{owner}", response_model=List[RepositorySchema], dependencies=[Depends(get_current_user)])
 async def get_repositories(
@@ -129,7 +128,7 @@ async def get_latest_commit(
         raise HTTPException(status_code=500, detail=str(e))
     
 # trigger github webhook for user 
-@router.post("/repository/{owner}/{repo_name}/webhook", response_model=None, dependencies=[Depends(get_current_user)])
+@router.post("/repository/{owner}/{repo_name}/webhook", response_model=None)
 async def create_webhook(
     owner: str,
     repo_name: str,
@@ -142,7 +141,6 @@ async def create_webhook(
     try:
         # Get the access key from the token payload
         access_key = await get_access_key_from_token_payload(token)
-        print("access_key", access_key)
         result = await git_repository_service.create_github_webhook(owner=owner, repo_name=repo_name, access_token=access_key)
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])

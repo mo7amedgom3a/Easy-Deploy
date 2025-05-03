@@ -16,7 +16,7 @@ class AWSUserRepository:
 
     async def get_user(self, user_id: str) -> AWSUserSchema:
         collection = await self.db.get_collection("aws_users")
-        user = await collection.find_one({"_id": user_id})
+        user = await collection.find_one({"user_github_id": user_id})
         if not user:
             return None
         return AWSUserSchema(**user)

@@ -28,7 +28,9 @@ async def get_aws_user_service(
 ) -> AWSUserService:
     return AWSUserService(aws_user_repository)
 
+
 async def get_deploy_service(
     deploy_repository: DeployRepository = Depends(get_deploy_repository),
+    aws_user_service: AWSUserService = Depends(get_aws_user_service)
 ) -> DeployService:
-    return DeployService(deploy_repository)
+    return DeployService(deploy_repository, aws_user_service)

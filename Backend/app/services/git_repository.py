@@ -139,7 +139,9 @@ class GitRepositoryService:
     # === Webhook Management ===
     
     async def create_github_webhook(self, owner: str, repo_name: str, access_token: str) -> dict:
+        
         """Create a webhook for a repository."""
+        print("access_token", access_token)
         webhook_data = {
             "config": {
                 "url": self.webhook_url,
@@ -167,7 +169,7 @@ class GitRepositoryService:
     async def clone_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         """Clone a repository to local filesystem."""
         clone_url = f"https://{access_token}@github.com/{owner}/{repo_name}.git"
-        clone_dir = f"/tmp/repo/{owner}/{repo_name}"
+        clone_dir = f"/mnt/sda2/tmp/repo/{owner}/{repo_name}"
         os.makedirs(clone_dir, exist_ok=True)
         
         try:
@@ -175,6 +177,8 @@ class GitRepositoryService:
             return {"message": "Repository cloned successfully", "path": clone_dir}
         except subprocess.CalledProcessError as e:
             return {"error": f"Clone failed: {str(e)}"}
+        except Exception as e:
+            return {"error": f"Unexpected error during clone: {str(e)}"}
 
     async def pull_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         """Pull the latest changes for a cloned repository."""

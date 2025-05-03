@@ -6,11 +6,12 @@ from typing import Dict
 from models.deploy import Deploy
 from repositories.deploy import DeployRepository
 from schemas.deploy_schema import DeployCreateSchema
-
-
+from schemas.aws_user_schema import AWSUserSchema
+from services.aws_user import AWSUserService
 class DeployService:
-    def __init__(self, deploy_repository: DeployRepository):
+    def __init__(self, deploy_repository: DeployRepository, aws_user_service: AWSUserService):
         self.deploy_repository = deploy_repository
+        self.aws_user_service = aws_user_service
         self.base_pipeline_path = "app/Pipelines/"
         self.framework_config = self._load_framework_config()
         self.supported_frameworks = self._get_supported_frameworks()
@@ -40,9 +41,31 @@ class DeployService:
         """Get the appropriate pipeline path based on framework type."""
         type_path = f"{self.base_pipeline_path}{framework_type.capitalize()}/"
         return os.path.join(type_path, framework.capitalize())
+    
+
+
+    def get_framework_config(self) -> Dict:
+        """Get the framework configuration."""
+        return self.framework_config
+
+
+    async def get_aws_user(self, user_id: str) -> AWSUserSchema:
+        """Fetch AWS user details from the repository."""
+        return await self.aws_user_service.get_user_by_id(user_id)
+
 
     async def create_deploy(self, deploy: DeployCreateSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
+        aws_user = await self.get_aws_user(deploy.user_github_id)
+        if not aws_user:
+            # if the first deploy, create a new user
+            try:
+                aws_user = await self.aws_user_service.create_user(deploy.user_github_id)
+            except Exception as e:
+                raise ValueError(f"Error creating AWS user: {str(e)}")
+        if not aws_user:
+            raise ValueError("AWS user not found or could not be created.")
+       
         framework = deploy.framework.lower()
         framework_type = self._get_framework_type(framework)
         
@@ -59,6 +82,16 @@ class DeployService:
         deploy_data["run_command"] = deploy_data.get("run_command") or framework_defaults["run_command"]
         deploy_data["port"] = deploy_data.get("port") or framework_defaults["port"]
         deploy_data["entry_point"] = deploy_data.get("entry_point") or framework_defaults["entry_point"]
-        deploy_data["pipline_path"] = self._get_pipeline_path(framework, framework_type)
+        deploy_data["pipeline_path"] = self._get_pipeline_path(framework, framework_type)
+        """
+        TODO:
+        - Validate the framework type and ensure it matches the provided framework.
+        - Clone the repository from GitHub using the provided repo name, owner.
+        - get the local path of the cloned repository.
+        - add the root path of project to local path.
+        - copy the pipeline file to the local path with the framework selected.
+        - copy infrastructure files to the local path.
+        - run terraform init and apply.
+        """
         
         return await self.deploy_repository.create_deploy(Deploy(**deploy_data))

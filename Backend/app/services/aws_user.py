@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 class AWSUserService:
     def __init__(self, aws_user: AWSUserRepository):
         self.aws_user = aws_user
-        terraform_path = os.path.join(os.path.dirname(__file__), "..", "Pipelines", "Common", "Terraform", "aws_user")
+        terraform_path = os.path.join(os.path.dirname(__file__), "..", "Pipelines", "Common", "Terraform", "iam")
         self.tf = Terraform(working_dir=terraform_path)
         load_dotenv()
 
@@ -27,8 +27,6 @@ class AWSUserService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return AWSUserSchema.from_orm(user)
-
-
 
     async def create_user(self, github_id: str) -> AWSUserSchema:
 
