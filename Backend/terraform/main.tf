@@ -1,4 +1,13 @@
 # Create an ECS cluster
+terraform {
+  backend "s3" {
+    bucket         = "my-deployment-states"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+    key            = "ecs-cluster/terraform.tfstate"
+    region         = "us-east-1"
+  }
+}
 provider "aws" {
   region = var.aws_region
 }
@@ -124,8 +133,24 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           
         }
       ]
+           mountPoints = [
+        {
+          sourceVolume  = "efs-repo-volume"
+          containerPath = "/mnt/repos"
+          readOnly      = false
+        }
+      ]
+      
     }
   ])
+  volume {
+    name = "efs-repo-volume"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.repo_storage.id
+      transit_encryption      = "ENABLED"
+      root_directory          = "/"
+    }
+  }
 }
 # Define the ECS service that will run the task
 resource "aws_ecs_service" "ecs_service" {

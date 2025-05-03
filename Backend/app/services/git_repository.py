@@ -15,6 +15,7 @@ class GitRepositoryService:
     
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
+        self.dir_base = "/mnt/repos" # change in production 
         self.base_url = "https://api.github.com"
         self.webhook_url = "monkfish-feasible-heavily.ngrok-free.app/git/repository/github-webhook"
         
@@ -169,7 +170,7 @@ class GitRepositoryService:
     async def clone_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         """Clone a repository to local filesystem."""
         clone_url = f"https://{access_token}@github.com/{owner}/{repo_name}.git"
-        clone_dir = f"/mnt/sda2/tmp/repo/{owner}/{repo_name}"
+        clone_dir = f"{self.dir_base}/{owner}/{repo_name}"
         os.makedirs(clone_dir, exist_ok=True)
         
         try:
