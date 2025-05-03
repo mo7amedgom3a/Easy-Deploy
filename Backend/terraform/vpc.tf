@@ -97,7 +97,19 @@ resource "aws_security_group" "security_group" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow HTTPS traffic"
   }
-
+    ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTPS traffic"
+  }
+  ingress {
+    from_port   = 27017
+    to_port     = 27017
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   # Egress rules
    egress {
     from_port       = 27017
@@ -114,13 +126,7 @@ resource "aws_security_group" "security_group" {
     description = "Allow all outbound traffic (MongoDB Atlas, Internet)"
   }
 
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTPS traffic"
-  }
+
 
   tags = {
     Name = "ecs-sg"

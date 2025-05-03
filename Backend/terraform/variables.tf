@@ -9,10 +9,6 @@ variable "public_key_path" {
   type        = string
 }
 
-variable "mongodb_connection_string" {
-  description = "MongoDB connection string"
-  type        = string
-}
 variable "private_key_path" {
   description = "Path to your private SSH key"
   default = "~/.ssh/id_rsa"

@@ -140,12 +140,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           readOnly      = false
         }
       ]
-        environment = [
-      {
-        name  = "CONNECTION_STRING"
-        value = var.mongodb_connection_string
-      }
-    ]
+
       
     }
   ])
