@@ -1,4 +1,14 @@
 # Create an ECS cluster
+terraform {
+  backend "s3" {
+    bucket         = "my-deployment-states"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+    region         = "us-east-1"
+  }
+
+}
+
 provider "aws" {
   region = var.aws_region
   # access_key = var.aws_access_key
