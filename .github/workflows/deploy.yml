@@ -11,6 +11,13 @@ jobs:
     env:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       ECR_REPO_URL: ${{secrets.ECR_REPO_URL}}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+      JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
+      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+      EXPIRATION_TIME: ${{ secrets.EXPIRATION_TIME }}
       IMAGE_TAG: latest
 
     steps:
@@ -33,7 +40,15 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t easy-deploy-backend Backend/app
+        docker build \
+          --build-arg CLIENT_ID=$CLIENT_ID \
+          --build-arg CLIENT_SECRET=$CLIENT_SECRET \
+          --build-arg CONNECTION_STRING=$CONNECTION_STRING \
+          --build-arg DATABASE_NAME=$DATABASE_NAME \
+          --build-arg JWT_ALGORITHM=$JWT_ALGORITHM \
+          --build-arg JWT_SECRET_KEY=$JWT_SECRET_KEY \
+          --build-arg EXPIRATION_TIME=$EXPIRATION_TIME \
+          -t easy-deploy-backend Backend/app
         docker tag easy-deploy-backend:latest $ECR_REPO_URL:$IMAGE_TAG
         docker push $ECR_REPO_URL:$IMAGE_TAG
     # allow ecs to force pull latest image
