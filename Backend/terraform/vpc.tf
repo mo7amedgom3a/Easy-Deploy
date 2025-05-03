@@ -90,7 +90,22 @@ resource "aws_security_group" "security_group" {
     description = "Allow HTTP traffic"
   }
 
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow HTTPS traffic"
+  }
+
   # Egress rules
+   egress {
+    from_port       = 27017
+    to_port         = 27017
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+    description     = "Allow MongoDB Atlas access"
+  }
   egress {
     from_port   = 0
     to_port     = 0

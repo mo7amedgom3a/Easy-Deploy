@@ -142,8 +142,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       ]
         environment = [
       {
-        name  = "MONGODB_URI"
-        value = var.mongodb_connection_string  # Define this in your variables
+        name  = "CONNECTION_STRING"
+        value = var.mongodb_connection_string
       }
     ]
       
@@ -167,8 +167,7 @@ resource "aws_ecs_service" "ecs_service" {
   
   network_configuration {
     subnets         = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
-    security_groups = [aws_security_group.security_group.id]
-    
+    security_groups = [aws_security_group.security_group.id]    
   }
 
   force_new_deployment = true
