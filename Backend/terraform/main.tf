@@ -58,7 +58,7 @@ resource "aws_ecs_capacity_provider" "aws_ecs_capacity_provider" {
 
   auto_scaling_group_provider {
     auto_scaling_group_arn = aws_autoscaling_group.ecs_asg.arn
-
+  
     managed_scaling {
       maximum_scaling_step_size = 1000
       minimum_scaling_step_size = 1
@@ -84,6 +84,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
       }
     ]
   })
+  
 }
 
 # Attach ECS Task Execution policy
@@ -133,7 +134,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           
         }
       ]
-           mountPoints = [
+        mountPoints = [
         {
           sourceVolume  = "efs-repo-volume"
           containerPath = "/mnt/repos"
@@ -159,18 +160,16 @@ resource "aws_ecs_service" "ecs_service" {
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   desired_count   = 1
-  
   network_configuration {
-    subnets         = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
-    security_groups = [aws_security_group.security_group.id]    
+    subnets         = aws_subnet.private_subnets[*].id
+    security_groups = [aws_security_group.ecs_tasks_sg.id]   
   }
-
+  
   force_new_deployment = true
   placement_constraints {
     type = "distinctInstance"
   }
-
-  triggers = {
+   triggers = {
     redeployment = timestamp()
   }
 

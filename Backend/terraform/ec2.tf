@@ -13,7 +13,7 @@ resource "aws_launch_template" "ecs_lt" {
   instance_type = "t2.micro"
   
   
-  vpc_security_group_ids = [aws_security_group.security_group.id]
+  vpc_security_group_ids = [aws_security_group.ecs_tasks_sg.id]
   iam_instance_profile {
     name = aws_iam_instance_profile.aws_ecs_instance_profile.name
   }
@@ -36,13 +36,14 @@ resource "aws_launch_template" "ecs_lt" {
 }
 
 resource "aws_autoscaling_group" "ecs_asg" {
-  vpc_zone_identifier = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+  vpc_zone_identifier = aws_subnet.private_subnets[*].id
   desired_capacity    = 2
   max_size            = 2
   min_size            = 1
 
   launch_template {
     id      = aws_launch_template.ecs_lt.id
+    
     version = "$Latest"
   }
 
@@ -58,8 +59,8 @@ resource "aws_lb" "ecs_alb" {
   name               = var.aws_lb_name
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.security_group.id]
-  subnets = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets = aws_subnet.public_subnets[*].id
 
   tags = {
     Name = "ecs-alb"
@@ -85,6 +86,7 @@ resource "aws_lb_target_group" "ecs_tg" {
   target_type = "ip"
   
   vpc_id      = aws_vpc.main.id
+  
 
   health_check {
     path                = "/"
