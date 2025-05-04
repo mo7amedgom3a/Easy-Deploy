@@ -28,6 +28,7 @@ class DatabaseConnection:
             try:
                 self.client = AsyncIOMotorClient(self.database_url)
                 # Trigger a server selection to ensure connection
+                print(f"Connecting to MongoDB at {self.database_url}")
                 await self.client.server_info()
                 
                 logger.info("Connected to MongoDB Successfully")
