@@ -1,6 +1,7 @@
 data "aws_ssm_parameter" "ecs_ami" {
   name = "/aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id"
 }
+
 resource "aws_key_pair" "deployer_key" {
   key_name   = "deployer-key"
   public_key = file(var.public_key_path)

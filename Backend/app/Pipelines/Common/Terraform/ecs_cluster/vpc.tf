@@ -1,44 +1,114 @@
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
+  enable_dns_support   = true
+
   tags = {
-    name = "main-${var.user_github_id}-vpc"
+    Name = "main-${var.user_github_id}-vpc"
   }
 }
-resource "aws_subnet" "subnet" {
-  vpc_id                  = aws_vpc.main.id
 
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, 1)
-  map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
-}
-
-
+# ------------------------------------------
+# Internet Gateway
+# ------------------------------------------
 resource "aws_internet_gateway" "internet_gateway" {
   vpc_id = aws_vpc.main.id
+  
   tags = {
     Name = "${var.user_github_id}-igw"
   }
 }
 
-resource "aws_route_table" "route_table" {
+# ------------------------------------------
+# Public Subnet and Routing
+# ------------------------------------------
+resource "aws_subnet" "public_subnet" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, 1)
+  map_public_ip_on_launch = true
+  availability_zone       = "us-east-1a"
+  
+  tags = {
+    Name = "${var.user_github_id}-public-subnet"
+  }
+}
+
+resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.main.id
+  
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.internet_gateway.id
   }
+  
+  tags = {
+    Name = "${var.user_github_id}-public-route-table"
+  }
 }
 
-resource "aws_route_table_association" "subnet_route" {
-  subnet_id      = aws_subnet.subnet.id
-  route_table_id = aws_route_table.route_table.id
+resource "aws_route_table_association" "public_route_association" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_route_table.id
 }
 
+# ------------------------------------------
+# Private Subnet and Routing
+# ------------------------------------------
+resource "aws_subnet" "private_subnet" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 2)
+  availability_zone = "us-east-1a"
+  
+  tags = {
+    Name = "${var.user_github_id}-private-subnet"
+  }
+}
 
+# NAT Gateway for private subnet internet access
+resource "aws_eip" "nat_eip" {
+  domain = "vpc"
+  
+  tags = {
+    Name = "${var.user_github_id}-nat-eip"
+  }
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = aws_subnet.public_subnet.id
+  depends_on    = [aws_internet_gateway.internet_gateway]
+  
+  tags = {
+    Name = "${var.user_github_id}-nat-gateway"
+  }
+}
+
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.main.id
+  
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+  
+  tags = {
+    Name = "${var.user_github_id}-private-route-table"
+  }
+}
+
+resource "aws_route_table_association" "private_route_association" {
+  subnet_id      = aws_subnet.private_subnet.id
+  route_table_id = aws_route_table.private_route_table.id
+}
+
+# ------------------------------------------
+# Security Group
+# ------------------------------------------
 resource "aws_security_group" "security_group" {
   name   = var.aws_security_group_name
   vpc_id = aws_vpc.main.id
 
+  # Allow SSH access
   ingress {
     from_port   = 22
     to_port     = 22
@@ -46,20 +116,17 @@ resource "aws_security_group" "security_group" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow SSH access"
   }
+  
+  # Allow HTTP traffic to container
   ingress {
-    from_port       = 5000
-    to_port         = 5000
-    protocol        = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description     = "Allow ALB traffic to ECS container"
-  }
-  ingress {
-    from_port   = 80
+    from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow traffic from port 80 to 5000"
+    description = "Allow ALB traffic to ECS container"
   }
+  
+  # Allow HTTP traffic to load balancer
   ingress {
     from_port   = 80
     to_port     = 80
@@ -67,41 +134,19 @@ resource "aws_security_group" "security_group" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow HTTP traffic for load balancer"
   }
-  egress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow SSH egress"
-  }
+  
+  
 
-  egress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow ALB traffic to ECS container egress"
-  }
-
-  egress {
-    from_port   = 80
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow traffic from port 80 to 5000 egress"
-  }
-
-  egress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTP traffic for load balancer egress"
-  }
+  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
+  }
+  
+  tags = {
+    Name = "${var.user_github_id}-sg"
   }
 }

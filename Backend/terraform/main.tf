@@ -141,16 +141,14 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           readOnly      = false
         }
       ]
-
-      
     }
   ])
-  volume {
-    name = "efs-repo-volume"
-    efs_volume_configuration {
-      file_system_id          = aws_efs_file_system.repo_storage.id
-      transit_encryption      = "ENABLED"
-      root_directory          = "/"
+      volume {
+        name = "efs-repo-volume"
+        efs_volume_configuration {
+          file_system_id          = aws_efs_file_system.repo_storage.id
+          transit_encryption      = "ENABLED"
+          root_directory          = "/"
     }
   }
 }
@@ -169,9 +167,7 @@ resource "aws_ecs_service" "ecs_service" {
   placement_constraints {
     type = "distinctInstance"
   }
-   triggers = {
-    redeployment = timestamp()
-  }
+
 
   capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
