@@ -58,7 +58,7 @@ async def shutdown_db_client():
 # for health check on aws
 @app.get("/")
 def root():
-    return {"message": "OK"}
+    return {"message": "Hello"}
 # Routers that require authentication
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(aws_user.router, dependencies=[Depends(oauth2_scheme)])
