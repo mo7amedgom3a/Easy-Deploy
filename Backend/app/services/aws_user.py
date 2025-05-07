@@ -30,7 +30,12 @@ class AWSUserService:
 
     async def create_user(self, github_id: str) -> AWSUserSchema:
 
-        # get the current user
+        # check if user already exists
+        existing_user = await self.aws_user.get_user(github_id)
+        if existing_user:
+            raise HTTPException(status_code=400, detail="User already exists")
+        
+
         
         # Prepare Terraform variables
         vars = {

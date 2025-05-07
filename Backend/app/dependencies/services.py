@@ -31,6 +31,7 @@ async def get_aws_user_service(
 
 async def get_deploy_service(
     deploy_repository: DeployRepository = Depends(get_deploy_repository),
-    aws_user_service: AWSUserService = Depends(get_aws_user_service)
+    aws_user_service: AWSUserService = Depends(get_aws_user_service),
+    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
 ) -> DeployService:
-    return DeployService(deploy_repository, aws_user_service)
+    return DeployService(deploy_repository, aws_user_service, git_repository_service)

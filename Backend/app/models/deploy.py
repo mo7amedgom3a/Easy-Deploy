@@ -4,13 +4,13 @@ from datetime import datetime
 
 class Deploy(BaseModel):
     user_github_id: str
-    repo_id: str
     repo_name:str
     owner: str
     branch: str
-    pipline_path: Optional[str] = None  # path to the pipeline file
+    pipeline_path: Optional[str] = None  # path to the pipeline file
     framework: Optional[str] = None  # e.g., "flask", "django", etc.
     root_folder_path: str
+    absolute_path: Optional[str] = None  
     build_command: Optional[str] = None  
     run_command: Optional[str] = None 
     webhook_id: Optional[str] = None

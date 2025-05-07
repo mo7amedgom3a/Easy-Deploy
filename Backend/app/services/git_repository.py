@@ -15,9 +15,9 @@ class GitRepositoryService:
     
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
-        self.dir_base = "/mnt/repos" # change in production 
+        self.dir_base = "/mnt/sda2/tmp/repos" # change in production 
         self.base_url = "https://api.github.com"
-        self.webhook_url = "monkfish-feasible-heavily.ngrok-free.app/git/repository/github-webhook"
+        self.webhook_url = "https://kp6tjc7t-8000.uks1.devtunnels.ms//git/repository/github-webhook"
         
     # === API Interaction Methods ===
     

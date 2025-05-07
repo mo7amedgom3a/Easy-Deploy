@@ -6,6 +6,7 @@ from models.deploy import Deploy
 from typing import Optional, List, Dict
 from schemas.user_schema import UserSchema
 from dependencies.services import get_deploy_service
+from dependencies.security import get_current_user, get_access_key_from_token_payload
 from fastapi.security import OAuth2PasswordBearer
 from services.aws_user import AWSUserService
 
@@ -23,8 +24,9 @@ async def create_deploy(
     """
     try:
         # Get the access key from the token payload
-        deploy.user_github_id = user.github_id        
-        return await deploy_service.create_deploy(deploy)
+              
+        access_token = await get_access_key_from_token_payload(token)
+        return await deploy_service.create_deploy(deploy, access_token=access_token, user=user)
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:

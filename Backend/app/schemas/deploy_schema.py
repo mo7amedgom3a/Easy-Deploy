@@ -6,8 +6,6 @@ from pydantic import BaseModel
 
 class BaseDeploySchema(BaseModel):
     """Base schema with common deploy fields"""
-    user_github_id: str
-    repo_id: str
     repo_name: str
     owner: str
     branch: str
@@ -26,7 +24,7 @@ class DeployCreateSchema(BaseDeploySchema):
 
 class DeploySchema(BaseDeploySchema):
     """Schema for a complete deployment record"""
-    pipline_path: Optional[str] = None
+    pipeline_path: Optional[str] = None
     webhook_id: Optional[str] = None
     status: Optional[str] = None
     created_at: datetime = datetime.now()
