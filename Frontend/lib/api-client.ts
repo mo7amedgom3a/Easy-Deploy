@@ -125,6 +125,30 @@ export const apiClient = {
     
     return await response.json();
   },
+
+  /**
+   * Check if user is authenticated
+   */
+  async isAuthenticated() {
+    try {
+      await this.get('/users/me');
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  /**
+   * Get GitHub user information
+   */
+  async getGithubUserInfo() {
+    try {
+      return await this.get('/users/github/me');
+    } catch (error) {
+      console.error('Failed to get GitHub user info:', error);
+      return null;
+    }
+  }
 };
 
 /**

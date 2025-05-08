@@ -1,115 +1,88 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { API_URL } from '@/lib/constants';
+import { githubService } from '@/lib/services/github';
+
+/**
+ * Convert a GitHub repository to a project format
+ */
+function convertRepoToProject(repo: any) {
+  // Generate tags based on repository properties
+  const tags: string[] = [];
+  if (repo.language) tags.push(repo.language);
+  if (repo.visibility) tags.push(repo.visibility);
+  
+  return {
+    id: `github_${repo.id}`,
+    name: repo.name,
+    description: repo.description || `Repository: ${repo.name}`,
+    tags,
+    status: "not_deployed",
+    lastDeployed: repo.updated_at || undefined,
+    repository: repo.full_name,
+    repositoryUrl: repo.html_url,
+    environment: 'development'
+  };
+}
 
 export async function GET() {
-  // Get the token from cookies
-  const cookieStore = await cookies();
-  const token = cookieStore.get('authToken')?.value;
-  
   try {
-    // Try to get data from the backend if the endpoint exists
-    // We'll try to use the repositories endpoint since it might be available
-    const response = await fetch(`${API_URL}/git_repositories`, {
-      headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      },
-      cache: 'no-store',
-      next: { revalidate: 0 }
-    });
-
-    if (response.ok) {
-      // If we get data from the backend, transform it to match the expected format
-      const data = await response.json();
-      
-      // Map backend data to the format expected by the frontend
-      const mappedData = Array.isArray(data) ? data.map((item: any, index: number) => ({
-        id: item.id || `project_${index}`,
-        name: item.name || `Project ${index}`,
-        description: item.description || `Description for project ${index}`,
-        repositoryUrl: item.url || `https://github.com/username/repo-${index}`,
-        lastDeployed: item.updated_at || new Date().toISOString(),
-        status: 'active',
-        environment: 'production'
-      })) : [];
-      
-      return NextResponse.json(mappedData);
+    const cookieStore = await cookies();
+    const authToken = cookieStore.get('authToken');
+    
+    if (!authToken) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
     }
     
-    // If the endpoint doesn't exist or returns an error, provide mock data
-    console.log('Backend endpoint not found, returning mock data for /projects/');
-    
-    // Mock data for projects
-    return NextResponse.json([
-      {
-        id: 'project_1',
-        name: 'E-commerce Frontend',
-        description: 'Next.js application for the customer-facing store',
-        repositoryUrl: 'https://github.com/org/ecommerce-frontend',
-        lastDeployed: '2023-05-07T10:23:14Z',
-        status: 'active',
-        environment: 'production'
-      },
-      {
-        id: 'project_2',
-        name: 'API Backend',
-        description: 'FastAPI service providing core business logic',
-        repositoryUrl: 'https://github.com/org/api-backend',
-        lastDeployed: '2023-05-06T15:17:22Z',
-        status: 'active',
-        environment: 'production'
-      },
-      {
-        id: 'project_3',
-        name: 'Marketing Website',
-        description: 'Static website for marketing materials',
-        repositoryUrl: 'https://github.com/org/marketing-website',
-        lastDeployed: '2023-05-05T09:12:56Z',
-        status: 'active',
-        environment: 'production'
-      },
-      {
-        id: 'project_4',
-        name: 'Admin Dashboard',
-        description: 'React admin panel for internal tools',
-        repositoryUrl: 'https://github.com/org/admin-dashboard',
-        lastDeployed: '2023-05-04T14:34:19Z',
-        status: 'active',
-        environment: 'staging'
-      },
-      {
-        id: 'project_5',
-        name: 'Mobile App Backend',
-        description: 'Backend services for mobile applications',
-        repositoryUrl: 'https://github.com/org/mobile-backend',
-        lastDeployed: '2023-05-03T11:42:08Z',
-        status: 'active',
-        environment: 'production'
+    try {
+      // Try to fetch from the backend API first
+      const response = await fetch(`${API_URL}/projects/`, {
+        headers: {
+          'Authorization': `Bearer ${authToken.value}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return NextResponse.json(data);
       }
-    ]);
+      
+      // If backend API fails, generate fallback projects from GitHub repositories
+      const githubUser = await githubService.getCurrentUser();
+      if (githubUser && githubUser.login) {
+        const repos = await githubService.getRepositories(githubUser.login);
+        
+        // Convert GitHub repositories to project format
+        const projects = repos.map(repo => convertRepoToProject(repo));
+        return NextResponse.json(projects);
+      }
+      
+      return NextResponse.json([]);
+      
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      
+      // Generate fallback projects from GitHub repositories
+      const githubUser = await githubService.getCurrentUser();
+      if (githubUser && githubUser.login) {
+        const repos = await githubService.getRepositories(githubUser.login);
+        
+        // Convert GitHub repositories to project format
+        const projects = repos.map(repo => convertRepoToProject(repo));
+        return NextResponse.json(projects);
+      }
+      
+      return NextResponse.json([]);
+    }
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    
-    // Return mock data in case of any error
-    return NextResponse.json([
-      {
-        id: 'project_1',
-        name: 'E-commerce Frontend',
-        description: 'Next.js application for the customer-facing store',
-        repositoryUrl: 'https://github.com/org/ecommerce-frontend',
-        lastDeployed: '2023-05-07T10:23:14Z',
-        status: 'active',
-        environment: 'production'
-      },
-      {
-        id: 'project_2',
-        name: 'API Backend',
-        description: 'FastAPI service providing core business logic',
-        repositoryUrl: 'https://github.com/org/api-backend',
-        lastDeployed: '2023-05-06T15:17:22Z',
-        status: 'active',
-        environment: 'production'
-      }
-    ]);
+    console.error('Error in projects API route:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch projects' },
+      { status: 500 }
+    );
   }
 }

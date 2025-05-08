@@ -5,21 +5,24 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { CheckCircle2, Clock, ExternalLink, RotateCcw, XCircle } from "lucide-react"
+import { CheckCircle2, Clock, ExternalLink, Github, RotateCcw, XCircle } from "lucide-react"
 import { Deployment, deploymentsService } from "@/lib/services"
 
 export function RecentDeployments() {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDeployments = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const data = await deploymentsService.getRecentDeployments(5);
         setDeployments(data);
       } catch (error) {
         console.error("Error fetching recent deployments:", error);
+        setError("Failed to load deployment data");
       } finally {
         setIsLoading(false);
       }
@@ -30,12 +33,19 @@ export function RecentDeployments() {
 
   const handleRedeploy = async (deploymentId: string) => {
     try {
+      // If it's a commit and not an actual deployment, show message
+      if (deploymentId.startsWith('commit_')) {
+        alert('This is a GitHub commit, not an actual deployment. Please use the Deploy button to create a new deployment.');
+        return;
+      }
+      
       await deploymentsService.redeploy(deploymentId);
       // Refresh the list after redeploying
       const data = await deploymentsService.getRecentDeployments(5);
       setDeployments(data);
     } catch (error) {
       console.error(`Error redeploying deployment ${deploymentId}:`, error);
+      alert('Failed to redeploy. Please try again later.');
     }
   };
 
@@ -47,10 +57,21 @@ export function RecentDeployments() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>{error}</p>
+        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   if (deployments.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>No deployments found</p>
+        <p>No deployment activity found</p>
       </div>
     );
   }
@@ -110,35 +131,65 @@ export function RecentDeployments() {
                       </Badge>
                     </>
                   )}
+                  {deployment.status === "not_deployed" && (
+                    <>
+                      <Github className="h-4 w-4 text-blue-500" />
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">
+                        Commit
+                      </Badge>
+                    </>
+                  )}
                 </div>
               </TableCell>
-              <TableCell>{deployment.branch}</TableCell>
-              <TableCell className="font-mono text-xs">{deployment.commit.substring(0, 7)}</TableCell>
-              <TableCell>{deployment.time || deployment.timestamp}</TableCell>
+              <TableCell>{deployment.branch || "main"}</TableCell>
+              <TableCell className="font-mono text-xs">
+                {deployment.commit ? deployment.commit.substring(0, 7) : "Unknown"}
+              </TableCell>
+              <TableCell>{deployment.time || deployment.timestamp || "Unknown"}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="icon" className="h-8 w-8" asChild>
-                    <Link href={`/dashboard/deployments/${deployment.id}`}>
-                      <ExternalLink className="h-4 w-4" />
-                      <span className="sr-only">View deployment</span>
-                    </Link>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-8 w-8" 
-                    onClick={() => handleRedeploy(deployment.id)}
-                    disabled={deployment.status === "building"}
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span className="sr-only">Redeploy</span>
-                  </Button>
+                  {deployment.status === "not_deployed" ? (
+                    <Button variant="outline" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/dashboard/projects/${deployment.projectId}/deploy`}>
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="sr-only">Deploy commit</span>
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="icon" className="h-8 w-8" asChild>
+                      <Link href={`/dashboard/deployments/${deployment.id}`}>
+                        <ExternalLink className="h-4 w-4" />
+                        <span className="sr-only">View deployment</span>
+                      </Link>
+                    </Button>
+                  )}
+                  {deployment.status !== "not_deployed" && (
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={() => handleRedeploy(deployment.id)}
+                      disabled={deployment.status === "building"}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="sr-only">Redeploy</span>
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      
+      {deployments.length > 0 && deployments.some(d => d.status === "not_deployed") && (
+        <div className="mt-4 text-sm text-muted-foreground text-center">
+          <p>
+            <Github className="inline-block h-4 w-4 mr-1 align-text-bottom" />
+            "Commit" status indicates GitHub activity not yet deployed
+          </p>
+        </div>
+      )}
     </div>
   )
 }

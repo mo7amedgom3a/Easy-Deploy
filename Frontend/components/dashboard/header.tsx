@@ -17,6 +17,7 @@ import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LogoutButton } from "@/components/logout-button"
+import { UserAvatar } from "@/components/dashboard/user-avatar"
 
 export function DashboardHeader() {
   const { isMobile } = useSidebar()
@@ -87,8 +88,8 @@ export function DashboardHeader() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
+              <Button variant="outline" size="icon" className="rounded-full overflow-hidden p-0 h-10 w-10 border-2">
+                <UserAvatar />
                 <span className="sr-only">User menu</span>
               </Button>
             </DropdownMenuTrigger>

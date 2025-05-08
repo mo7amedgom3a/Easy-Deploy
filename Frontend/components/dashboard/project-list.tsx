@@ -11,16 +11,19 @@ import { Project, projectsService } from "@/lib/services"
 export function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchProjects = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const data = await projectsService.getProjects();
-        // If we need to limit the number of projects displayed
+        // If we need to limit the number of projects displayed on dashboard
         setProjects(data.slice(0, 3));
       } catch (error) {
         console.error("Error fetching projects:", error);
+        setError("Failed to load projects. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -36,13 +39,24 @@ export function ProjectList() {
       </div>
     );
   }
+  
+  if (error) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>{error}</p>
+        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   if (projects.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>No projects found</p>
+        <p>No GitHub repositories found</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/dashboard/projects/new">Create Your First Project</Link>
+          <Link href="/dashboard/projects/new">Connect GitHub Repository</Link>
         </Button>
       </div>
     );
@@ -65,15 +79,21 @@ export function ProjectList() {
                 </Link>
               </Button>
             </div>
-            <CardDescription className="line-clamp-1 mt-1">{project.description}</CardDescription>
+            <CardDescription className="line-clamp-1 mt-1">
+              {project.description || `Repository: ${project.name}`}
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <div className="flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
+              {project.tags && project.tags.length > 0 ? (
+                project.tags.map((tag, index) => (
+                  <Badge key={`${project.id}-tag-${index}`} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))
+              ) : (
+                <Badge variant="secondary">No tags</Badge>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex items-center justify-between border-t bg-muted/50 p-4">
@@ -96,8 +116,16 @@ export function ProjectList() {
                   <span>Deploying...</span>
                 </>
               )}
+              {project.status === "not_deployed" && (
+                <>
+                  <Github className="h-4 w-4" />
+                  <span>Not deployed yet</span>
+                </>
+              )}
               {project.lastDeployed && (
-                <span className="ml-2 text-muted-foreground">({project.lastDeployed})</span>
+                <span className="ml-2 text-muted-foreground">
+                  ({formatDate(project.lastDeployed)})
+                </span>
               )}
             </div>
             <Button size="sm" className="gap-1" asChild>
@@ -109,10 +137,45 @@ export function ProjectList() {
           </CardFooter>
         </Card>
       ))}
-      <Button asChild variant="outline" className="mt-2">
-        <Link href="/dashboard/projects">View All Projects</Link>
-      </Button>
+      {projects.length > 0 && (
+        <Button asChild variant="outline" className="mt-2">
+          <Link href="/dashboard/projects">View All Projects</Link>
+        </Button>
+      )}
     </div>
   )
+}
+
+// Helper function to format date
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today';
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays} days ago`;
+    } else {
+      return date.toLocaleDateString(undefined, { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
 }
 
