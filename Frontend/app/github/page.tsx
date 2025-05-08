@@ -183,7 +183,7 @@ const GitHubCallback = () => {
             Authentication failed. Please try again.
             <div style={{ marginTop: '10px' }}>
               <button 
-                onClick={() => window.location.href='/api/auth/login'} 
+                onClick={() => window.location.href=`${API_URL}/auth/login`} 
                 className="retry-button"
                 style={{
                   padding: '8px 16px',
