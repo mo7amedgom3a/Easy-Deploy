@@ -23,7 +23,7 @@ resource "aws_ecr_repository" "app_repo" {
     scan_on_push = true
   }
   force_delete = true
-  
+
 }
 
 resource "aws_iam_role" "aws_ecs_instance_role" {

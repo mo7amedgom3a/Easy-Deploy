@@ -30,7 +30,14 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     user.access_token = payload.get("access_key")
-    return user
+    if user.login == payload.get("name"):
+        return user
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 async def get_access_key_from_token_payload(token: str ) -> str:
     """
