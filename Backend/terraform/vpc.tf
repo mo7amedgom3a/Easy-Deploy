@@ -53,19 +53,19 @@ resource "aws_route_table_association" "public_route_associations" {
   route_table_id = aws_route_table.public_route_table.id
 }
 
-# # ------------------------------------------
-# # Private Subnets and Routing
-# # ------------------------------------------
-# resource "aws_subnet" "private_subnets" {
-#   count             = 2
-#   vpc_id            = aws_vpc.main.id
-#   cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + 3)
-#   availability_zone = "us-east-1${count.index == 0 ? "a" : "b"}"
+# ------------------------------------------
+# Private Subnets and Routing
+# ------------------------------------------
+resource "aws_subnet" "private_subnets" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + 3)
+  availability_zone = "us-east-1${count.index == 0 ? "a" : "b"}"
   
-#   tags = {
-#     Name = "private-subnet-${count.index + 1}" # ex private-subnet-1, private-subnet-2
-#   }
-# }
+  tags = {
+    Name = "private-subnet-${count.index + 1}" # ex private-subnet-1, private-subnet-2
+  }
+}
 
 # NAT Gateway for private subnet internet access
 resource "aws_eip" "nat_eip" {
@@ -85,24 +85,24 @@ resource "aws_nat_gateway" "nat_gateway" {
   }
 }
 
-# resource "aws_route_table" "private_route_table" {
-#   vpc_id = aws_vpc.main.id
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.main.id
 
-#   route {
-#     cidr_block     = "0.0.0.0/0"
-#     nat_gateway_id = aws_nat_gateway.nat_gateway.id
-#   }
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
 
-#   tags = {
-#     Name = "private-route-table"
-#   }
-# }
+  tags = {
+    Name = "private-route-table"
+  }
+}
 
-# resource "aws_route_table_association" "private_route_associations" {
-#   count          = 2
-#   subnet_id      = aws_subnet.private_subnets[count.index].id
-#   route_table_id = aws_route_table.private_route_table.id
-# }
+resource "aws_route_table_association" "private_route_associations" {
+  count          = 2
+  subnet_id      = aws_subnet.private_subnets[count.index].id
+  route_table_id = aws_route_table.private_route_table.id
+}
 
 # ------------------------------------------
 # Security Groups
@@ -163,6 +163,13 @@ resource "aws_security_group" "ecs_tasks_sg" {
     security_groups = [aws_security_group.security_group.id]
     description     = "Allow MongoDB access"
   }
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.security_group.id]
+    description     = "Allow SSH access"
+  }
   # Egress rules
   egress {
     from_port   = 27017
@@ -170,21 +177,6 @@ resource "aws_security_group" "ecs_tasks_sg" {
     protocol    = "tcp"
     security_groups = [aws_security_group.security_group.id]
     description = "Allow outbound MongoDB access"
-  }
-  # allow ssh ingress and egress
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow SSH"
-  }
-  egress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow outbound SSH"
   }
 
   egress {
@@ -207,17 +199,10 @@ resource "aws_security_group" "security_group" {
   # Ingress rules
   ingress {
     from_port   = 22
-    to_port     = 22
+    to_port     = 22  
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow SSH"
-  }
-  egress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow outbound SSH"
   }
 
   ingress {
