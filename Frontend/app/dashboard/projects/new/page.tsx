@@ -33,6 +33,19 @@ interface GithubUser {
   [key: string]: any
 }
 
+// Add new interfaces for framework data
+interface FrameworkInfo {
+  port: string;
+  entry_point: string;
+  build_command: string;
+  run_command: string;
+}
+
+interface FrameworkCategories {
+  backend: Record<string, FrameworkInfo>;
+  frontend: Record<string, FrameworkInfo>;
+}
+
 export default function NewProjectPage() {
   const [user, setUser] = useState<GithubUser | null>(null)
   const router = useRouter()
@@ -50,6 +63,15 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // New state for environment variables as key-value pairs
+  const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([
+    { key: "", value: "" }
+  ]);
+
+  const [frameworks, setFrameworks] = useState<FrameworkCategories | null>(null);
+  const [frameworkCategory, setFrameworkCategory] = useState<'backend' | 'frontend'>('backend');
+  const [frameworksLoading, setFrameworksLoading] = useState(false);
+  const [frameworkError, setFrameworkError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCurrentUser()
@@ -155,22 +177,13 @@ export default function NewProjectPage() {
     branch: "main",
     rootDirectory: "/",
     framework: "",
-    useDocker: false,
-    installCommand: "npm install",
-    buildCommand: "npm run build",
-    startCommand: "npm start", 
-    dockerfilePath: "./Dockerfile",
-    dockerRunCommand: "",
+    frameworkCategory: "backend",
+    port: "5000",
+    installCommand: "pip install -r requirements.txt",
+    buildCommand: "",
+    startCommand: "flask run",
     environmentVariables: "",
-    encryptVars: false,
-    nodeVersion: "18",
-    autoDeploy: true,
-    previewDeploys: true,
-    buildCache: "enable",
-    outputDirectory: "dist", // Default output directory
-    customDomain: "",
-    container_port: 3000, // Default port for web apps
-    instance_type: "t2.micro" // Default AWS instance type
+    appEntryPoint: "app.py",
   })
 
   // Handle form input changes
@@ -347,27 +360,37 @@ export default function NewProjectPage() {
     }
   };
 
-  // Function to parse environment variables from string to object
-  const parseEnvironmentVariables = (envString: string): Record<string, string> | undefined => {
-    if (!envString.trim()) return undefined;
-
-    const envVars: Record<string, string> = {};
-    const lines = envString.split('\n');
+  // Parse environment variables from array of key-value objects
+  const parseEnvironmentVariables = (): Record<string, string> | undefined => {
+    const validEnvVars = envVars.filter(env => env.key.trim() !== "");
+    if (validEnvVars.length === 0) return undefined;
     
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine || trimmedLine.startsWith('#')) continue;
-      
-      const equalsIndex = trimmedLine.indexOf('=');
-      if (equalsIndex > 0) {
-        const key = trimmedLine.substring(0, equalsIndex).trim();
-        const value = trimmedLine.substring(equalsIndex + 1).trim();
-        envVars[key] = value;
-      }
-    }
+    const envVarsObj: Record<string, string> = {};
+    validEnvVars.forEach(({ key, value }) => {
+      envVarsObj[key.trim()] = value;
+    });
     
-    return Object.keys(envVars).length > 0 ? envVars : undefined;
+    return Object.keys(envVarsObj).length > 0 ? envVarsObj : undefined;
   }
+
+  // Handle adding a new environment variable entry
+  const addEnvVar = () => {
+    setEnvVars([...envVars, { key: "", value: "" }]);
+  };
+
+  // Handle updating env var key or value
+  const updateEnvVar = (index: number, field: 'key' | 'value', value: string) => {
+    const updatedEnvVars = [...envVars];
+    updatedEnvVars[index][field] = value;
+    setEnvVars(updatedEnvVars);
+  };
+
+  // Handle removing an env var entry
+  const removeEnvVar = (index: number) => {
+    const updatedEnvVars = [...envVars];
+    updatedEnvVars.splice(index, 1);
+    setEnvVars(updatedEnvVars);
+  };
 
   // Attempt to refresh GitHub auth and data
   const refreshGitHubData = async () => {
@@ -643,6 +666,99 @@ export default function NewProjectPage() {
     }
   }, [owner, repoName, selectedDirectory]);
 
+  // Fetch available frameworks
+  const fetchFrameworks = async () => {
+    setFrameworksLoading(true);
+    setFrameworkError(null);
+    
+    try {
+      // Get token for authentication
+      let token = null;
+      try {
+        const tokenResponse = await fetch('/api/auth/token', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store'
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          token = tokenData.token;
+        } else {
+          throw new Error("Authentication token not found");
+        }
+      } catch (tokenError) {
+        console.error("Token fetch error:", tokenError);
+        setFrameworkError("Authentication error. Please try logging in again.");
+        setFrameworksLoading(false);
+        return;
+      }
+      
+      // Make the API request
+      const response = await fetch(`${API_URL}/deploy/frameworks`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch frameworks: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log("Frameworks data:", data);
+      setFrameworks(data);
+      
+      // Set Flask as default if available
+      if (data?.backend?.flask) {
+        setFormData(prev => ({
+          ...prev,
+          framework: "flask",
+          frameworkCategory: "backend",
+          port: data.backend.flask.port,
+          installCommand: data.backend.flask.build_command,
+          startCommand: data.backend.flask.run_command,
+          appEntryPoint: data.backend.flask.entry_point
+        }));
+      }
+      
+    } catch (error) {
+      console.error("Error fetching frameworks:", error);
+      setFrameworkError(error instanceof Error ? error.message : "Failed to load frameworks");
+    } finally {
+      setFrameworksLoading(false);
+    }
+  };
+  
+  // Load frameworks on initial render
+  useEffect(() => {
+    fetchFrameworks();
+  }, []);
+  
+  // Update form when framework changes
+  const handleFrameworkChange = (frameworkName: string, category: 'backend' | 'frontend') => {
+    if (!frameworks) return;
+    
+    const frameworkInfo = frameworks[category][frameworkName];
+    if (!frameworkInfo) return;
+    
+    setFormData(prev => ({
+      ...prev,
+      framework: frameworkName,
+      frameworkCategory: category,
+      port: frameworkInfo.port,
+      installCommand: frameworkInfo.build_command,
+      startCommand: frameworkInfo.run_command,
+      appEntryPoint: frameworkInfo.entry_point
+    }));
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -678,20 +794,18 @@ export default function NewProjectPage() {
         throw new Error("Authentication token is missing");
       }
       
-      // Create deployment data based on API requirements from /deploy/ endpoint
+      // Create deployment data based on API requirements
       const deploymentData = {
         repo_name: repoName,
         owner: owner,
         branch: formData.branch,
         framework: formData.framework,
-        root_folder_path: formData.rootDirectory || "/", // Use the selected directory path or default to root
-        port: formData.container_port?.toString(),
-        environment_variables: parseEnvironmentVariables(formData.environmentVariables),
-        build_command: formData.buildCommand,
+        root_folder_path: formData.rootDirectory || "/", 
+        port: formData.port,
+        environment_variables: parseEnvironmentVariables(),
+        build_command: formData.installCommand,
         run_command: formData.startCommand,
-        // These are additional fields beyond the basic schema requirements
-        environment: "development",
-        app_entry_point: formData.outputDirectory || "dist"
+        app_entry_point: formData.appEntryPoint
       }
       
       console.log("Submitting deployment data:", deploymentData);
@@ -734,7 +848,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-8">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/projects">
@@ -763,292 +877,289 @@ export default function NewProjectPage() {
           <CardTitle>Project Details</CardTitle>
           <CardDescription>Enter the details for your new project</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
-              <TabsTrigger value="build">Build Settings</TabsTrigger>
-              <TabsTrigger value="env">Environment</TabsTrigger>
-              <TabsTrigger value="advanced">Advanced</TabsTrigger>
-            </TabsList>
+        <CardContent className="space-y-8">
+              {/* Basic Project Information */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium">Basic Information</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Project Name</Label>
+                    <Input id="name" placeholder="My Awesome Project" value={formData.name} onChange={handleInputChange} />
+                  </div>
 
-            <TabsContent value="basic" className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input id="name" placeholder="My Awesome Project" value={formData.name} onChange={handleInputChange} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="A brief description of your project"
-                  className="min-h-[100px]"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="repository">GitHub Repository</Label>
-                <div className="flex gap-2">
-                  <RepositorySelector
-                    username={user?.login}
-                    onChange={handleRepoChange}
-                    value={selectedRepo}
-                    error={authError}
-                    onRetry={refreshGitHubData}
-                  />
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="A brief description of your project"
+                      className="min-h-[80px]"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Select a repository
-                </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="branch">Branch to deploy</Label>
-                <Select onValueChange={(value) => handleSelectChange("branch", value)} defaultValue={formData.branch}>
-                  <SelectTrigger id="branch">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map(branch => (
-                      <SelectItem key={branch} value={branch}>
-                        {branch}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Repository Information */}
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="text-lg font-medium">GitHub Repository</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="repository">Repository</Label>
+                    <RepositorySelector
+                      username={user?.login}
+                      onChange={handleRepoChange}
+                      value={selectedRepo}
+                      error={authError}
+                      onRetry={refreshGitHubData}
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Select a repository to deploy
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="branch">Branch</Label>
+                    <Select onValueChange={(value) => handleSelectChange("branch", value)} defaultValue={formData.branch}>
+                      <SelectTrigger id="branch">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map(branch => (
+                          <SelectItem key={branch} value={branch}>
+                            {branch}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               
+              {/* Source Code Location */}
               {owner && repoName && (
-                <div className="space-y-2">
-                  <Label>Root Directory</Label>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Select the directory where your source code is located. To deploy a monorepo, create separate projects
-                    for other directories in the future.
-                  </p>
-                  
-                  {/* Debug information */}
-                  <div className="text-xs text-gray-500 mb-2">
-                    Repository: {owner}/{repoName} 
-                  </div>
-                  
-                  <DirectorySelector 
-                    owner={owner} 
-                    repoName={repoName} 
-                    onDirectorySelected={(dir) => {
-                      console.log("Directory selected in parent:", dir);
-                      handleDirectorySelect(dir);
-                    }} 
-                  />
-                  
-                  {/* Show current selection status */}
-                  <div className="mt-2 p-2 bg-muted rounded-md text-sm">
-                    <span className="font-semibold">Selected path:</span> {formData.rootDirectory === "/" ? "/ (root)" : formData.rootDirectory}
-                    {selectedDirectory && (
-                      <span className="text-xs text-muted-foreground ml-2">
-                        (SHA: {selectedDirectory.sha.substring(0, 7)})
-                      </span>
-                    )}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-lg font-medium">Source Code Location</h3>
+                  <div className="space-y-2">
+                    <Label>Root Directory</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Select the directory where your source code is located.
+                    </p>
+                    
+                    <DirectorySelector 
+                      owner={owner} 
+                      repoName={repoName} 
+                      onDirectorySelected={(dir) => {
+                        console.log("Directory selected in parent:", dir);
+                        handleDirectorySelect(dir);
+                      }} 
+                    />
+                    
+                    <div className="mt-2 p-2 bg-muted rounded-md text-sm">
+                      <span className="font-semibold">Selected path:</span> {formData.rootDirectory === "/" ? "/ (root)" : formData.rootDirectory}
+                      {selectedDirectory && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (SHA: {selectedDirectory.sha.substring(0, 7)})
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-            </TabsContent>
-
-            <TabsContent value="build" className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="framework">Framework</Label>
-                <Select onValueChange={(value) => handleSelectChange("framework", value)}>
-                  <SelectTrigger id="framework">
-                    <SelectValue placeholder={isLoading ? "Loading frameworks..." : "Select a framework"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoading ? (
-                      <SelectItem value="loading" disabled>Loading...</SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="nextjs">Next.js</SelectItem>
-                        <SelectItem value="react">React</SelectItem>
-                        <SelectItem value="vue">Vue</SelectItem>
-                        <SelectItem value="angular">Angular</SelectItem>
-                        <SelectItem value="nodejs">Node.js</SelectItem>
-                        <SelectItem value="flask">Flask</SelectItem>
-                        <SelectItem value="django">Django</SelectItem>
-                        <SelectItem value="express">Express</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center space-x-2 mb-4">
-                <Switch id="useDocker" checked={formData.useDocker} onCheckedChange={(checked) => handleSwitchChange("useDocker", checked)} />
-                <Label htmlFor="useDocker">Use Dockerfile</Label>
-              </div>
-
-              <div className="space-y-6">
-                <div className="border rounded-md p-4">
-                  <div className="flex items-center mb-4">
-                    <Terminal className="h-5 w-5 mr-2 text-muted-foreground" />
-                    <h3 className="text-lg font-medium">Build & Run Commands</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="installCommand">Install Command</Label>
-                      <Input id="installCommand" placeholder="npm install" value={formData.installCommand} onChange={handleInputChange} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="buildCommand">Build Command</Label>
-                      <Input id="buildCommand" placeholder="npm run build" value={formData.buildCommand} onChange={handleInputChange} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="startCommand">Start Command</Label>
-                      <Input id="startCommand" placeholder="npm start" value={formData.startCommand} onChange={handleInputChange} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded-md p-4">
-                  <div className="flex items-center mb-4">
-                    <FileCode className="h-5 w-5 mr-2 text-muted-foreground" />
-                    <h3 className="text-lg font-medium">Docker Configuration</h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="dockerfilePath">Dockerfile Path</Label>
-                      <Input id="dockerfilePath" placeholder="./Dockerfile" value={formData.dockerfilePath} onChange={handleInputChange} />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="dockerRunCommand">Docker Run Command (optional)</Label>
-                      <Input id="dockerRunCommand" placeholder="docker run -p 3000:3000 my-image" value={formData.dockerRunCommand} onChange={handleInputChange} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="env" className="space-y-6">
-              <div className="border rounded-md p-4">
-                <div className="flex items-center mb-4">
-                  <FileJson className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">Environment Variables</h3>
-                </div>
-
-                <div className="space-y-4">
+              {/* Framework Selection */}
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="text-lg font-medium">Framework</h3>
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="environmentVariables">Environment Variables</Label>
-                    <Textarea
-                      id="environmentVariables"
-                      placeholder="DATABASE_URL=postgres://user:password@localhost:5432/db
-API_KEY=your_api_key
-NODE_ENV=production"
-                      className="font-mono text-sm min-h-[200px]"
-                      value={formData.environmentVariables}
-                      onChange={handleInputChange}
+                    <Label htmlFor="frameworkCategory">Framework Type</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={formData.frameworkCategory === "backend" ? "default" : "outline"}
+                        className="w-full"
+                        onClick={() => setFormData(prev => ({ ...prev, frameworkCategory: "backend" }))}
+                      >
+                        Backend
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={formData.frameworkCategory === "frontend" ? "default" : "outline"} 
+                        className="w-full"
+                        onClick={() => setFormData(prev => ({ ...prev, frameworkCategory: "frontend" }))}
+                      >
+                        Frontend
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="framework">Select Framework</Label>
+                    {frameworksLoading ? (
+                      <div className="flex items-center space-x-2 p-4 bg-muted rounded-md">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Loading frameworks...</span>
+                      </div>
+                    ) : frameworkError ? (
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        <AlertDescription className="flex items-center justify-between">
+                          <span>{frameworkError}</span>
+                          <Button size="sm" variant="outline" onClick={fetchFrameworks}>
+                            Retry
+                          </Button>
+                        </AlertDescription>
+                      </Alert>
+                    ) : frameworks ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        {Object.keys(frameworks[formData.frameworkCategory as keyof FrameworkCategories] || {}).map(frameworkName => (
+                          <Button
+                            key={frameworkName}
+                            type="button"
+                            variant={formData.framework === frameworkName ? "default" : "outline"}
+                            className="w-full"
+                            onClick={() => handleFrameworkChange(frameworkName, formData.frameworkCategory as 'backend' | 'frontend')}
+                          >
+                            {frameworkName}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        <AlertDescription>No frameworks available</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Build & Run Configuration */}
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="text-lg font-medium">Build & Run Configuration</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="installCommand">Install Command</Label>
+                    <Input 
+                      id="installCommand" 
+                      placeholder="pip install -r requirements.txt" 
+                      value={formData.installCommand} 
+                      onChange={handleInputChange} 
+                      className="font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="buildCommand">Build Command</Label>
+                    <Input 
+                      id="buildCommand" 
+                      placeholder="" 
+                      value={formData.buildCommand} 
+                      onChange={handleInputChange} 
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Optional for some frameworks
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="startCommand">Start Command</Label>
+                    <Input 
+                      id="startCommand" 
+                      placeholder="flask run" 
+                      value={formData.startCommand} 
+                      onChange={handleInputChange} 
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="port">Port</Label>
+                    <Input 
+                      id="port" 
+                      placeholder="5000" 
+                      value={formData.port} 
+                      onChange={handleInputChange} 
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="appEntryPoint">App Entry Point</Label>
+                    <Input 
+                      id="appEntryPoint" 
+                      placeholder="app.py" 
+                      value={formData.appEntryPoint} 
+                      onChange={handleInputChange} 
+                      className="font-mono text-sm"
                     />
                     <p className="text-sm text-muted-foreground mt-1">
-                      Enter environment variables in KEY=VALUE format, one per line
+                      The main file that runs your application
                     </p>
                   </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch id="encryptVars" checked={formData.encryptVars} onCheckedChange={(checked) => handleSwitchChange("encryptVars", checked)} />
-                    <Label htmlFor="encryptVars">Encrypt sensitive variables</Label>
-                  </div>
                 </div>
               </div>
 
-              <div className="border rounded-md p-4">
-                <div className="flex items-center mb-4">
-                  <Cog className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">Environment Configuration</h3>
-                </div>
-
+              {/* Environment Variables */}
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="text-lg font-medium">Environment Variables</h3>
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="nodeVersion">Node.js Version</Label>
-                    <Select onValueChange={(value) => handleSelectChange("nodeVersion", value)}>
-                      <SelectTrigger id="nodeVersion">
-                        <SelectValue placeholder="Select Node.js version" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="20">20.x (Latest)</SelectItem>
-                        <SelectItem value="18">18.x (LTS)</SelectItem>
-                        <SelectItem value="16">16.x</SelectItem>
-                        <SelectItem value="14">14.x</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="envFile">Upload .env File (Optional)</Label>
-                    <Input id="envFile" type="file" className="cursor-pointer" />
-                  </div>
+                  {envVars.map((env, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <Input 
+                          placeholder="KEY" 
+                          value={env.key}
+                          onChange={(e) => updateEnvVar(index, 'key', e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div className="flex-[2]">
+                        <Input 
+                          placeholder="VALUE" 
+                          value={env.value}
+                          onChange={(e) => updateEnvVar(index, 'value', e.target.value)}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => removeEnvVar(index)}
+                        disabled={envVars.length === 1}
+                        className="flex-shrink-0"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={addEnvVar}
+                  >
+                    Add Environment Variable
+                  </Button>
+                  
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Environment variables needed by your application
+                  </p>
                 </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="advanced" className="space-y-6">
-              <div className="border rounded-md p-4">
-                <div className="flex items-center mb-4">
-                  <Cog className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">Advanced Settings</h3>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch id="autoDeploy" checked={formData.autoDeploy} onCheckedChange={(checked) => handleSwitchChange("autoDeploy", checked)} />
-                    <Label htmlFor="autoDeploy">Auto-deploy on push</Label>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch id="previewDeploys" checked={formData.previewDeploys} onCheckedChange={(checked) => handleSwitchChange("previewDeploys", checked)} />
-                    <Label htmlFor="previewDeploys">Create preview deployments for pull requests</Label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="buildCache">Build Cache</Label>
-                    <Select defaultValue={formData.buildCache} onValueChange={(value) => handleSelectChange("buildCache", value)}>
-                      <SelectTrigger id="buildCache">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="enable">Enable build cache</SelectItem>
-                        <SelectItem value="disable">Disable build cache</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="outputDirectory">Output Directory</Label>
-                    <Input id="outputDirectory" placeholder="dist" value={formData.outputDirectory} onChange={handleInputChange} />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      The directory where your build outputs static files
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="customDomain">Custom Domain (Optional)</Label>
-                    <Input id="customDomain" placeholder="www.example.com" value={formData.customDomain} onChange={handleInputChange} />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className="flex justify-between border-t pt-6">
           <Button variant="outline" asChild>
             <Link href="/dashboard/projects">Cancel</Link>
           </Button>
-          <Button className="gap-2" onClick={handleSubmit} disabled={isLoading || authError !== ""}>
+          <Button 
+            className="gap-2" 
+            onClick={handleSubmit} 
+            disabled={isLoading || authError !== "" || !formData.framework}
+          >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             <Github className="h-4 w-4" />
             Create Project
