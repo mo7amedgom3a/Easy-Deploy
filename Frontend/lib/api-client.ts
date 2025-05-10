@@ -1,3 +1,44 @@
+// Add token caching to reduce repeated API calls
+let cachedToken: { token: string | null; expiresAt: number } = { token: null, expiresAt: 0 };
+
+/**
+ * Get the auth token, using cached token if available and not expired
+ */
+async function getAuthToken() {
+  const now = Date.now();
+  
+  // Use cached token if available and not expired (expire after 5 minutes)
+  if (cachedToken.token && cachedToken.expiresAt > now) {
+    return cachedToken.token;
+  }
+  
+  // Otherwise, fetch a new token
+  try {
+    const tokenResponse = await fetch('/api/auth/token', {
+      method: 'GET',
+      credentials: 'include'
+    });
+    
+    if (tokenResponse.ok) {
+      const data = await tokenResponse.json();
+      // Cache the token for 5 minutes
+      cachedToken = {
+        token: data.token,
+        expiresAt: now + 5 * 60 * 1000 // 5 minutes in milliseconds
+      };
+      return data.token;
+    } else {
+      console.warn(`Token retrieval failed: ${tokenResponse.status} ${tokenResponse.statusText}`);
+      cachedToken = { token: null, expiresAt: 0 };
+      return null;
+    }
+  } catch (tokenError) {
+    console.error('Error retrieving auth token:', tokenError);
+    cachedToken = { token: null, expiresAt: 0 };
+    return null;
+  }
+}
+
 import { API_URL } from "./constants";
 
 /**
@@ -19,23 +60,8 @@ export const apiClient = {
       });
     }
     
-    // First get the token from our auth API
-    let token = null;
-    try {
-      const tokenResponse = await fetch('/api/auth/token', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (tokenResponse.ok) {
-        const data = await tokenResponse.json();
-        token = data.token;
-      } else {
-        console.warn(`Token retrieval failed: ${tokenResponse.status} ${tokenResponse.statusText}`);
-      }
-    } catch (tokenError) {
-      console.error('Error retrieving auth token:', tokenError);
-    }
+    // Get token using the cached function instead of fetching each time
+    const token = await getAuthToken();
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -71,18 +97,14 @@ export const apiClient = {
    * @param data Request body data
    */
   async post(endpoint: string, data?: any) {
-    // First get the token from our auth API
-    const tokenResponse = await fetch('/api/auth/token', {
-      method: 'GET',
-      credentials: 'include'
-    }).then(res => res.json())
-      .catch(() => ({ token: null }));
+    // Get token using the cached function instead of fetching each time
+    const token = await getAuthToken();
     
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(tokenResponse.token ? { 'Authorization': `Bearer ${tokenResponse.token}` } : {})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -100,18 +122,14 @@ export const apiClient = {
    * @param data Request body data
    */
   async put(endpoint: string, data?: any) {
-    // First get the token from our auth API
-    const tokenResponse = await fetch('/api/auth/token', {
-      method: 'GET',
-      credentials: 'include'
-    }).then(res => res.json())
-      .catch(() => ({ token: null }));
+    // Get token using the cached function instead of fetching each time
+    const token = await getAuthToken();
     
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...(tokenResponse.token ? { 'Authorization': `Bearer ${tokenResponse.token}` } : {})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       body: data ? JSON.stringify(data) : undefined,
     });
@@ -128,18 +146,14 @@ export const apiClient = {
    * @param endpoint API endpoint path
    */
   async delete(endpoint: string) {
-    // First get the token from our auth API
-    const tokenResponse = await fetch('/api/auth/token', {
-      method: 'GET',
-      credentials: 'include'
-    }).then(res => res.json())
-      .catch(() => ({ token: null }));
+    // Get token using the cached function instead of fetching each time
+    const token = await getAuthToken();
     
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        ...(tokenResponse.token ? { 'Authorization': `Bearer ${tokenResponse.token}` } : {})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
     });
     
@@ -172,6 +186,13 @@ export const apiClient = {
       console.error('Failed to get GitHub user info:', error);
       return null;
     }
+  },
+
+  /**
+   * Manually invalidate the token cache (useful after logout)
+   */
+  invalidateTokenCache() {
+    cachedToken = { token: null, expiresAt: 0 };
   }
 };
 
@@ -201,6 +222,9 @@ async function handleResponseError(response: Response, endpoint?: string) {
   
   // Special handling for authentication errors
   if (response.status === 401) {
+    // Invalidate the token cache on auth errors
+    cachedToken = { token: null, expiresAt: 0 };
+    
     // Redirect to login on authentication errors
     // Use client-side navigation if available, otherwise fallback
     if (typeof window !== 'undefined') {

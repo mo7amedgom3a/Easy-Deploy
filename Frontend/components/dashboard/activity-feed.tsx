@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { deploymentsService } from "@/lib/services/deployments"
 import { deployService } from "@/lib/services/deploy"
 import { API_URL } from "@/lib/constants"
+import { apiClient } from "@/lib/api-client"
 
 interface Activity {
   id: string;
@@ -72,47 +73,13 @@ export function ActivityFeed() {
       setError(null);
       
       try {
-        // Get authentication token for API requests
-        let token = null;
+        // Fetch recent deployments from the backend using the API client
+        // which handles token fetching and caching automatically
         try {
-          const tokenResponse = await fetch('/api/auth/token', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            cache: 'no-store'
-          });
+          const recentDeployments = await apiClient.get('/deploy/recent?limit=5');
           
-          if (tokenResponse.ok) {
-            const tokenData = await tokenResponse.json();
-            token = tokenData.token;
-            console.log("Activity feed: Successfully retrieved auth token");
-          } else {
-            throw new Error("Failed to get authentication token");
-          }
-        } catch (tokenError) {
-          console.error("Activity feed: Token error:", tokenError);
-          throw new Error("Authentication error. Please try logging in again.");
-        }
-        
-        if (!token) {
-          throw new Error("Authentication token is missing");
-        }
-
-        // Fetch recent deployments from the backend
-        const recentDeploymentsResponse = await fetch(`${API_URL}/deploy/recent?limit=5`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        // Process recent deployments
-        const deploymentActivities: Activity[] = [];
-        if (recentDeploymentsResponse.ok) {
-          const recentDeployments = await recentDeploymentsResponse.json();
-          
+          // Process recent deployments
+          const deploymentActivities: Activity[] = [];
           if (Array.isArray(recentDeployments)) {
             deploymentActivities.push(...recentDeployments.map(deploy => ({
               id: deploy.id,
@@ -129,15 +96,48 @@ export function ActivityFeed() {
               url: deploy.deployment_url
             })));
           }
-        }
-        
-        // Fallback to GitHub activities if no deployments
-        let githubActivities: Activity[] = [];
-        if (deploymentActivities.length === 0) {
-          // Use the deploymentsService from the frontend to fetch GitHub activities
-          const recentGitHubActivities = await deploymentsService.getRecentGitHubActivity(5);
           
-          githubActivities = recentGitHubActivities.map(activity => ({
+          // Fallback to GitHub activities if no deployments
+          let githubActivities: Activity[] = [];
+          if (deploymentActivities.length === 0) {
+            // Use the deploymentsService from the frontend to fetch GitHub activities
+            const recentGitHubActivities = await deploymentsService.getRecentGitHubActivity(5);
+            
+            githubActivities = recentGitHubActivities.map(activity => ({
+              id: activity.id,
+              user: {
+                name: activity.author || "Unknown",
+                login: activity.author || "unknown",
+                avatar: undefined
+              },
+              type: "commit" as const,
+              status: "not_deployed" as const,
+              action: `pushed ${activity.commitMessage ? truncateCommitMessage(activity.commitMessage) : 'a commit'}`,
+              project: activity.project || "",
+              time: activity.time || formatTimeAgo(activity.timestamp),
+              url: undefined
+            }));
+          }
+          
+          // Combine activities and sort them by time
+          const allActivities = [...deploymentActivities, ...githubActivities];
+          
+          // Sort by timestamp (assuming time strings can be parsed)
+          allActivities.sort((a, b) => {
+            const timeA = parseTimeString(a.time);
+            const timeB = parseTimeString(b.time);
+            return timeB - timeA;
+          });
+          
+          // Limit to 6 activities
+          setActivities(allActivities.slice(0, 6));
+        } catch (apiError: any) {
+          console.error("Error fetching deployment data:", apiError);
+          
+          // Fallback to GitHub activities if API call fails
+          const recentGitHubActivities = await deploymentsService.getRecentGitHubActivity(6);
+          
+          const githubActivities = recentGitHubActivities.map(activity => ({
             id: activity.id,
             user: {
               name: activity.author || "Unknown",
@@ -145,26 +145,15 @@ export function ActivityFeed() {
               avatar: undefined
             },
             type: "commit" as const,
-            status: "not_deployed",
+            status: "not_deployed" as const,
             action: `pushed ${activity.commitMessage ? truncateCommitMessage(activity.commitMessage) : 'a commit'}`,
             project: activity.project || "",
             time: activity.time || formatTimeAgo(activity.timestamp),
             url: undefined
           }));
+          
+          setActivities(githubActivities);
         }
-        
-        // Combine activities and sort them by time
-        const allActivities = [...deploymentActivities, ...githubActivities];
-        
-        // Sort by timestamp (assuming time strings can be parsed)
-        allActivities.sort((a, b) => {
-          const timeA = parseTimeString(a.time);
-          const timeB = parseTimeString(b.time);
-          return timeB - timeA;
-        });
-        
-        // Limit to 6 activities
-        setActivities(allActivities.slice(0, 6));
       } catch (error) {
         console.error("Error fetching activity data:", error);
         setError("Failed to load activity data");

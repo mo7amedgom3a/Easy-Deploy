@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "./constants";
+import { apiClient } from "./api-client";
+import { invalidateUserProfileCache } from "@/components/dashboard/user-avatar";
 
 // Define auth context types
 type AuthContextType = {
@@ -87,18 +89,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (response.ok) {
         setIsAuthenticated(false);
+        // Invalidate all caches when logging out
+        apiClient.invalidateTokenCache();
+        invalidateUserProfileCache();
         router.push("/");
         router.refresh(); // Force refresh to update UI state
       } else {
         console.error("Logout API error:", response.status, response.statusText);
         // Still log out locally even if API call fails
         setIsAuthenticated(false);
+        // Invalidate all caches even on API failure
+        apiClient.invalidateTokenCache();
+        invalidateUserProfileCache();
         router.push("/");
       }
     } catch (error) {
       console.error("Logout error:", error);
       // Still log out locally even if API call fails
       setIsAuthenticated(false);
+      // Invalidate all caches even on error
+      apiClient.invalidateTokenCache();
+      invalidateUserProfileCache();
       router.push("/");
     }
   };
