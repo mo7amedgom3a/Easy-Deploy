@@ -283,30 +283,75 @@ export const DirectorySelector = ({
         children: [],
       };
 
-      // Process each item and add it to the tree
+      // Organize items into a proper tree structure
+      // First, create a map of all directories with their paths
+      const dirMap = new Map<string, DirectoryInfo>();
+      dirMap.set("/", rootNode);
+      
+      // Process each item and create directory entries
       if (Array.isArray(blobsData)) {
         console.log(`Processing ${blobsData.length} items from blob data`);
+        
+        // First pass: Create all directory nodes
         blobsData.forEach((item: any) => {
           if (item.type === "tree") { // GitHub API uses "tree" for directories
-            const dirPath = item.path || "";
-            const dirName = dirPath.split("/").pop() || dirPath;
+            const itemPath = item.path || "";
             
-            console.log(`Adding directory: ${dirName} (${dirPath})`);
+            // Normalize path to ensure it starts with /
+            const normalizedPath = itemPath.startsWith("/") ? itemPath : `/${itemPath}`;
+            
+            // Extract directory name (last part of path)
+            const dirName = normalizedPath.split("/").pop() || itemPath;
+            
+            console.log(`Creating directory node: ${dirName} (${normalizedPath})`);
+            
+            // Create directory info object
             const dirNode: DirectoryInfo = {
-              path: dirPath,
+              path: normalizedPath,
               name: dirName,
               sha: item.sha,
               type: "dir",
               children: []
             };
             
-            rootNode.children?.push(dirNode);
+            dirMap.set(normalizedPath, dirNode);
           }
         });
-
-        // Sort directories alphabetically
-        rootNode.children?.sort((a, b) => {
-          return (a.name || "").localeCompare(b.name || "");
+        
+        // Second pass: Build the directory tree
+        dirMap.forEach((dir, path) => {
+          if (path === "/") return; // Skip root node
+          
+          // Find parent path
+          const pathParts = path.split("/").filter(Boolean);
+          pathParts.pop(); // Remove current directory name
+          
+          let parentPath = "/";
+          if (pathParts.length > 0) {
+            parentPath = "/" + pathParts.join("/");
+          }
+          
+          console.log(`Assigning directory ${path} to parent ${parentPath}`);
+          
+          // Add this directory as a child of its parent
+          const parentDir = dirMap.get(parentPath);
+          if (parentDir) {
+            parentDir.children = parentDir.children || [];
+            parentDir.children.push(dir);
+          } else {
+            // If parent doesn't exist (shouldn't happen in a well-formed tree), 
+            // add it directly to root
+            rootNode.children?.push(dir);
+          }
+        });
+        
+        // Sort all directory children alphabetically
+        dirMap.forEach((dir) => {
+          if (dir.children && dir.children.length > 0) {
+            dir.children.sort((a, b) => {
+              return (a.name || "").localeCompare(b.name || "");
+            });
+          }
         });
         
         console.log(`Root node has ${rootNode.children?.length || 0} child directories`);
@@ -386,12 +431,40 @@ export const DirectorySelector = ({
           if (Array.isArray(subdirData)) {
             subdirData.forEach((item: any) => {
               if (item.type === "tree") { // GitHub API uses "tree" for directories
-                const dirPath = item.path || '';
-                // Handle nested paths correctly
-                const dirName = dirPath.split("/").pop() || dirPath;
+                const itemPath = item.path || '';
+                // Get just the directory name (last part of the path)
+                const dirName = itemPath.split("/").pop() || itemPath;
+                
+                // Construct the full path by combining the parent path with the item path
+                // Make sure we handle the root directory case correctly
+                let fullPath;
+                if (directoryPath === "/") {
+                  fullPath = `/${itemPath}`;
+                } else {
+                  // If the API already returns full paths from the repository root, use that
+                  if (itemPath.startsWith("/")) {
+                    fullPath = itemPath;
+                  } else {
+                    // Otherwise, construct a proper nested path
+                    // Check if the path from the API contains the parent directory
+                    if (itemPath.startsWith(directoryPath.replace(/^\//, ''))) {
+                      fullPath = `/${itemPath}`;
+                    } else {
+                      // Concatenate properly, avoiding double slashes
+                      fullPath = directoryPath.endsWith("/") ? 
+                        `${directoryPath}${itemPath}` : 
+                        `${directoryPath}/${itemPath}`;
+                    }
+                  }
+                }
+                
+                // Remove any duplicate slashes
+                fullPath = fullPath.replace(/\/+/g, '/');
+                
+                console.log(`Adding subdirectory: ${dirName} with full path: ${fullPath}`);
                 
                 node.children?.push({
-                  path: dirPath,
+                  path: fullPath,
                   name: dirName,
                   sha: item.sha || '',
                   type: "dir",
@@ -451,7 +524,7 @@ export const DirectorySelector = ({
   };
 
   const handleSelectDirectory = (directory: DirectoryInfo) => {
-    console.log(`Selected directory: ${directory.path}`);
+    console.log(`Selected directory: ${directory.path} (SHA: ${directory.sha})`);
     setSelectedDirectory(directory);
     onDirectorySelected(directory);
   };
@@ -583,7 +656,7 @@ export const DirectorySelector = ({
         </ScrollArea>
         {selectedDirectory && (
           <div className="text-xs text-muted-foreground mt-2">
-            Selected: {selectedDirectory.path === "/" ? "/ (root)" : selectedDirectory.path}
+            Selected: {selectedDirectory.path === "/" ? "/ (root)" : selectedDirectory.path} (SHA: {selectedDirectory.sha})
           </div>
         )}
       </CardContent>
