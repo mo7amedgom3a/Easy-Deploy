@@ -34,16 +34,26 @@ async def logout_post(authorization: Optional[str] = Header(None)):
     return response
 
 @router.get("/login")
-async def login():    
+async def login(state: str = None):    
     # Updated GitHub scope to ensure proper repository and user access
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={settings.CLIENT_ID}&redirect_uri={settings.REDIRECT_URI}&scope=repo:status read:repo_hook"
     )
+    
+    # Add state parameter if provided (used for redirecting back to the correct page)
+    if state:
+        github_auth_url += f"&state={state}"
+        
     return RedirectResponse(github_auth_url)
 
 @router.get("/github/callback")
-async def github_callback(request: Request, code: str, user_service: UserService = Depends(get_user_service)):
+async def github_callback(
+    request: Request, 
+    code: str, 
+    state: str = None,
+    user_service: UserService = Depends(get_user_service)
+):
     """
     This endpoint handles the GitHub callback after user authentication.
     It retrieves user data and creates or fetches the user in the system.
@@ -63,4 +73,10 @@ async def github_callback(request: Request, code: str, user_service: UserService
     token = create_access_token(data={"sub": user.github_id, "name": user.login, "access_key": user_data.get("access_token")})
     if not token:
         raise HTTPException(status_code=400, detail="Token creation failed")
-    return {"jwt_token": token}
+    
+    # Return the state parameter if it was provided
+    response = {"jwt_token": token}
+    if state:
+        response["state"] = state
+    
+    return response

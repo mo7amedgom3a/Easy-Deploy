@@ -1,43 +1,19 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { API_URL } from '@/lib/constants';
 
 export async function POST() {
-  const cookieStore = await cookies(); // Await the cookie store
   try {
-    const token = cookieStore.get('authToken')?.value;
-
-    // Notify backend about logout if we have a token
-    if (token) {
-      try {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          cache: 'no-store',
-        });
-      } catch (error) {
-        // Continue with local logout even if backend call fails
-        console.error('Backend logout failed:', error);
-      }
-    }
-
-    // Delete the cookie regardless of backend response
-    cookieStore.delete('authToken'); // Use the store variable
+    const cookieStore = await cookies();
     
-    return NextResponse.json({ message: 'Logged out successfully' });
+    // Clear the auth token cookie
+    cookieStore.delete('authToken');
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Logout error:', error);
-    
-    // Still delete the cookie even if there was an error
-    // Still delete the cookie even if there was an error
-    // Fetching cookieStore again is not needed as it's declared outside the try block now.
-    cookieStore.delete('authToken'); 
-    
-    // Return a generic success message even on error, as the cookie is cleared.
-    // Consider returning an error status code if more specific error handling is needed.
-    return NextResponse.json({ message: 'Logout processed, cookie cleared' });
+    console.error('Error logging out:', error);
+    return NextResponse.json(
+      { error: 'Failed to log out' },
+      { status: 500 }
+    );
   }
 }
