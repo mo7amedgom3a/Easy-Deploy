@@ -42,7 +42,30 @@ resource "aws_iam_role" "aws_ecs_instance_role" {
     ]
   })
 }
+resource "aws_iam_role_policy" "ecs_instance_inline_policy" {
+    name = "ecs-instance-ssm-policy"
+  role = aws_iam_role.aws_ecs_instance_role.id
 
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ssm:SendCommand",
+          "ssm:DescribeInstanceInformation",
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommands",
+          "ssm:ListCommandInvocations",
+          "ssmmessages:*",
+          "ec2messages:*",
+          "ec2-instance-connect:SendSSHPublicKey"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
 resource "aws_iam_role_policy_attachment" "aws_ecs_instance_role_policy" {
   role       = aws_iam_role.aws_ecs_instance_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
