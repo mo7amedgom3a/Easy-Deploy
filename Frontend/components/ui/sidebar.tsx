@@ -62,16 +62,16 @@ export function SidebarProvider({
   const [open, setOpen] = React.useState(defaultOpen)
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // Set cookie when sidebar state changes
+  // Set cookie when sidebar state changes (desktop only)
   React.useEffect(() => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== "undefined" && !isMobile) {
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
     }
-  }, [open])
+  }, [open, isMobile])
 
-  // Read cookie on initial load
+  // Read cookie on initial load (desktop only)
   React.useEffect(() => {
-    if (typeof document !== "undefined") {
+    if (typeof document !== "undefined" && !isMobile) {
       const cookies = document.cookie.split(";")
       const sidebarCookie = cookies.find((cookie) => cookie.trim().startsWith(`${SIDEBAR_COOKIE_NAME}=`))
 
@@ -80,9 +80,9 @@ export function SidebarProvider({
         setOpen(sidebarState === "true")
       }
     }
-  }, [])
+  }, [isMobile])
 
-  // Add keyboard shortcut
+  // Add keyboard shortcut for desktop
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
@@ -91,9 +91,18 @@ export function SidebarProvider({
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+    if (!isMobile) {
+      window.addEventListener("keydown", handleKeyDown)
+      return () => window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isMobile])
+
+  // Close mobile sidebar when screen size changes to desktop
+  React.useEffect(() => {
+    if (!isMobile && openMobile) {
+      setOpenMobile(false)
+    }
+  }, [isMobile, openMobile])
 
   const toggleSidebar = React.useCallback(() => {
     if (isMobile) {
@@ -102,6 +111,35 @@ export function SidebarProvider({
       setOpen((prev) => !prev)
     }
   }, [isMobile])
+
+  // Close mobile sidebar when navigating to a new page
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleRouteChange = () => {
+        if (isMobile && openMobile) {
+          setOpenMobile(false)
+        }
+      }
+      
+      window.addEventListener('popstate', handleRouteChange)
+      return () => window.removeEventListener('popstate', handleRouteChange)
+    }
+  }, [isMobile, openMobile])
+  
+  // Prevent body scrolling when mobile sidebar is open
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (isMobile && openMobile) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+      
+      return () => {
+        document.body.style.overflow = ''
+      }
+    }
+  }, [isMobile, openMobile])
 
   return (
     <SidebarContext.Provider

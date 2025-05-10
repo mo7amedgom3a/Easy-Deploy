@@ -848,7 +848,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto pb-8">
+    <div className="flex flex-col gap-6 max-w-full md:max-w-4xl mx-auto pb-8">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/dashboard/projects">
@@ -856,13 +856,13 @@ export default function NewProjectPage() {
             <span className="sr-only">Back</span>
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Create New Project</h1>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Create New Project</h1>
       </div>
 
       {authError && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4 mr-2" />
-          <AlertDescription className="flex items-center justify-between">
+          <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
             <span>{authError}</span>
             <Button size="sm" variant="outline" onClick={() => fetchGitHubData(0)} disabled={isLoading}>
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Github className="h-4 w-4 mr-2" />}
@@ -872,12 +872,12 @@ export default function NewProjectPage() {
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
+      <Card className="w-full">
+        <CardHeader className="px-4 md:px-6">
           <CardTitle>Project Details</CardTitle>
           <CardDescription>Enter the details for your new project</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 px-4 md:px-6">
               {/* Basic Project Information */}
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Basic Information</h3>
@@ -1151,12 +1151,12 @@ export default function NewProjectPage() {
                 </div>
               </div>
         </CardContent>
-        <CardFooter className="flex justify-between border-t pt-6">
-          <Button variant="outline" asChild>
+        <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 border-t pt-6 px-4 md:px-6">
+          <Button variant="outline" asChild className="w-full sm:w-auto order-2 sm:order-1">
             <Link href="/dashboard/projects">Cancel</Link>
           </Button>
           <Button 
-            className="gap-2" 
+            className="gap-2 w-full sm:w-auto order-1 sm:order-2" 
             onClick={handleSubmit} 
             disabled={isLoading || authError !== "" || !formData.framework}
           >
