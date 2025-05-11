@@ -85,11 +85,19 @@ export const apiClient = {
     }
     
     try {
+      // Set a reasonable timeout for fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers,
-        credentials: 'include'
+        credentials: 'include',
+        signal: controller.signal
       });
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         return await handleResponseError(response, endpoint);
@@ -116,12 +124,30 @@ export const apiClient = {
     } catch (fetchError) {
       console.error(`Fetch error for ${endpoint}:`, fetchError);
       
-      // For project endpoints, we want to return a useful error to allow fallback to GitHub data
-      if (endpoint === '/projects/' || endpoint.startsWith('/projects')) {
-        return { error: fetchError.message || 'Failed to fetch projects', status: 'error' };
+      // Handle network errors like "Failed to fetch" more gracefully
+      let errorMessage = 'Network error';
+      
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try again later.';
+        } else {
+          errorMessage = fetchError.message;
+        }
       }
       
-      throw fetchError;
+      // For debugging - show the actual API URL that failed
+      console.error(`API URL that failed: ${url.toString()}`);
+      
+      // For project endpoints, we want to return a useful error to allow fallback to GitHub data
+      if (endpoint === '/projects/' || endpoint.startsWith('/projects')) {
+        return { 
+          error: errorMessage || 'Failed to fetch projects', 
+          status: 'error',
+          apiUrl: url.toString() // Include the URL for debugging
+        };
+      }
+      
+      throw new Error(errorMessage);
     }
   },
   
@@ -139,31 +165,56 @@ export const apiClient = {
       throw new Error('Authentication required. Please login again.');
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    
-    if (!response.ok) {
-      await handleResponseError(response, endpoint);
+    try {
+      // Set a reasonable timeout for fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: data ? JSON.stringify(data) : undefined,
+        signal: controller.signal
+      });
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        await handleResponseError(response, endpoint);
+      }
+      
+      // If the response is 204 No Content, return an empty object
+      if (response.status === 204) {
+        return {};
+      }
+      
+      // Handle empty responses
+      const text = await response.text();
+      if (!text) {
+        return {};
+      }
+      
+      return JSON.parse(text);
+    } catch (fetchError) {
+      console.error(`Fetch error for ${endpoint}:`, fetchError);
+      
+      // Handle network errors like "Failed to fetch" more gracefully
+      let errorMessage = 'Network error';
+      
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try again later.';
+        } else {
+          errorMessage = fetchError.message;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
-    
-    // If the response is 204 No Content, return an empty object
-    if (response.status === 204) {
-      return {};
-    }
-    
-    // Handle empty responses
-    const text = await response.text();
-    if (!text) {
-      return {};
-    }
-    
-    return JSON.parse(text);
   },
   
   /**
@@ -180,26 +231,51 @@ export const apiClient = {
       throw new Error('Authentication required. Please login again.');
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: data ? JSON.stringify(data) : undefined,
-    });
-    
-    if (!response.ok) {
-      await handleResponseError(response, endpoint);
+    try {
+      // Set a reasonable timeout for fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: data ? JSON.stringify(data) : undefined,
+        signal: controller.signal
+      });
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        await handleResponseError(response, endpoint);
+      }
+      
+      // Handle empty responses
+      const text = await response.text();
+      if (!text) {
+        return {};
+      }
+      
+      return JSON.parse(text);
+    } catch (fetchError) {
+      console.error(`Fetch error for ${endpoint}:`, fetchError);
+      
+      // Handle network errors like "Failed to fetch" more gracefully
+      let errorMessage = 'Network error';
+      
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try again later.';
+        } else {
+          errorMessage = fetchError.message;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
-    
-    // Handle empty responses
-    const text = await response.text();
-    if (!text) {
-      return {};
-    }
-    
-    return JSON.parse(text);
   },
   
   /**
@@ -215,25 +291,50 @@ export const apiClient = {
       throw new Error('Authentication required. Please login again.');
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-    });
-    
-    if (!response.ok) {
-      await handleResponseError(response, endpoint);
+    try {
+      // Set a reasonable timeout for fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        signal: controller.signal
+      });
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        await handleResponseError(response, endpoint);
+      }
+      
+      // Handle empty responses
+      const text = await response.text();
+      if (!text) {
+        return {};
+      }
+      
+      return JSON.parse(text);
+    } catch (fetchError) {
+      console.error(`Fetch error for ${endpoint}:`, fetchError);
+      
+      // Handle network errors like "Failed to fetch" more gracefully
+      let errorMessage = 'Network error';
+      
+      if (fetchError instanceof Error) {
+        if (fetchError.name === 'AbortError') {
+          errorMessage = 'Request timed out. Please try again later.';
+        } else {
+          errorMessage = fetchError.message;
+        }
+      }
+      
+      throw new Error(errorMessage);
     }
-    
-    // Handle empty responses
-    const text = await response.text();
-    if (!text) {
-      return {};
-    }
-    
-    return JSON.parse(text);
   },
 
   /**
@@ -275,7 +376,7 @@ export const apiClient = {
  */
 async function handleResponseError(response: Response, endpoint?: string) {
   let errorMessage = 'An error occurred';
-  let errorData = {};
+  let errorData: Record<string, any> = {};
   
   try {
     const text = await response.text();
