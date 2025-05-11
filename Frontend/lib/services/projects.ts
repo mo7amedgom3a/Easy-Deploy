@@ -22,13 +22,27 @@ export interface Project {
   autoHealing?: boolean;
 }
 
+// Add an interface for error responses
+export interface ApiErrorResponse {
+  error: string;
+  status?: string | number;
+  message?: string;
+  detail?: string;
+}
+
 export const projectsService = {
   /**
    * Get all projects
    */
-  async getProjects(): Promise<Project[]> {
+  async getProjects(): Promise<Project[] | ApiErrorResponse> {
     try {
       const response = await apiClient.get('/projects/');
+      
+      // Check if response is an error object
+      if (response && typeof response === 'object' && 'error' in response) {
+        console.error('API returned an error:', response.error);
+        return response as ApiErrorResponse;
+      }
       
       // Check if response is an array (projects data) or has a message field (error)
       if (Array.isArray(response)) {
@@ -54,6 +68,9 @@ export const projectsService = {
     } catch (error) {
       console.error('Error fetching projects:', error);
       
+      // Properly type the error response
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
       // Try to get GitHub repositories as fallback
       try {
         const githubUser = await githubService.getCurrentUser();
@@ -67,14 +84,18 @@ export const projectsService = {
         console.error('Error fetching GitHub repositories:', githubError);
       }
       
-      return [];
+      // Return a properly formatted error object
+      return { 
+        error: errorMessage,
+        status: 'error'
+      };
     }
   },
 
   /**
    * Get a project by ID
    */
-  async getProjectById(id: string): Promise<Project | null> {
+  async getProjectById(id: string): Promise<Project | ApiErrorResponse | null> {
     try {
       // Check if it's a GitHub repository ID
       if (id.startsWith('github_')) {
@@ -94,32 +115,74 @@ export const projectsService = {
       }
       
       // Regular project ID
-      return await apiClient.get(`/projects/${id}`);
+      const response = await apiClient.get(`/projects/${id}`);
+      
+      // Check if response is an error object
+      if (response && typeof response === 'object' && 'error' in response) {
+        return response as ApiErrorResponse;
+      }
+      
+      return response as Project;
     } catch (error) {
       console.error(`Error fetching project ${id}:`, error);
-      return null;
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return { error: errorMessage, status: 'error' };
     }
   },
 
   /**
    * Create a new project
    */
-  async createProject(project: Partial<Project>): Promise<Project> {
-    return await apiClient.post('/projects/', project);
+  async createProject(project: Partial<Project>): Promise<Project | ApiErrorResponse> {
+    try {
+      const response = await apiClient.post('/projects/', project);
+      
+      // Check if response is an error object
+      if (response && typeof response === 'object' && 'error' in response) {
+        return response as ApiErrorResponse;
+      }
+      
+      return response as Project;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return { error: errorMessage, status: 'error' };
+    }
   },
 
   /**
    * Update a project
    */
-  async updateProject(id: string, project: Partial<Project>): Promise<Project> {
-    return await apiClient.put(`/projects/${id}`, project);
+  async updateProject(id: string, project: Partial<Project>): Promise<Project | ApiErrorResponse> {
+    try {
+      const response = await apiClient.put(`/projects/${id}`, project);
+      
+      // Check if response is an error object
+      if (response && typeof response === 'object' && 'error' in response) {
+        return response as ApiErrorResponse;
+      }
+      
+      return response as Project;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return { error: errorMessage, status: 'error' };
+    }
   },
 
   /**
    * Delete a project
    */
-  async deleteProject(id: string): Promise<void> {
-    await apiClient.delete(`/projects/${id}`);
+  async deleteProject(id: string): Promise<void | ApiErrorResponse> {
+    try {
+      const response = await apiClient.delete(`/projects/${id}`);
+      
+      // Check if response is an error object
+      if (response && typeof response === 'object' && 'error' in response) {
+        return response as ApiErrorResponse;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      return { error: errorMessage, status: 'error' };
+    }
   }
 };
 

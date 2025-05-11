@@ -70,25 +70,59 @@ export const apiClient = {
     // Add authorization header if token is available
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      // If no token is available and the endpoint requires authentication, handle this gracefully
+      if (endpoint.startsWith('/projects') || endpoint.includes('/git/') || endpoint.includes('/users/')) {
+        console.warn(`No auth token available for authenticated endpoint: ${endpoint}`);
+        throw new Error('Authentication required. Please login again.');
+      }
     }
     
     // Log request details for debugging (only for specific endpoints)
-    if (endpoint.includes('/git/repository/') || endpoint.includes('/github/')) {
+    if (endpoint.includes('/git/repository/') || endpoint.includes('/github/') || endpoint === '/projects/') {
       console.log(`Making API request to: ${url.toString()}`);
       console.log('With headers:', headers);
     }
     
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers,
-      credentials: 'include'
-    });
-    
-    if (!response.ok) {
-      return await handleResponseError(response, endpoint);
+    try {
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        return await handleResponseError(response, endpoint);
+      }
+      
+      // If the response is 204 No Content, return an empty object
+      if (response.status === 204) {
+        return {};
+      }
+      
+      // Handle empty responses
+      const text = await response.text();
+      if (!text) {
+        console.warn(`Empty response from ${endpoint}`);
+        return {};
+      }
+      
+      try {
+        return JSON.parse(text);
+      } catch (jsonError) {
+        console.error(`Failed to parse JSON response from ${endpoint}:`, jsonError, 'Response text:', text);
+        throw new Error(`Invalid JSON response from ${endpoint}`);
+      }
+    } catch (fetchError) {
+      console.error(`Fetch error for ${endpoint}:`, fetchError);
+      
+      // For project endpoints, we want to return a useful error to allow fallback to GitHub data
+      if (endpoint === '/projects/' || endpoint.startsWith('/projects')) {
+        return { error: fetchError.message || 'Failed to fetch projects', status: 'error' };
+      }
+      
+      throw fetchError;
     }
-    
-    return await response.json();
   },
   
   /**
@@ -100,6 +134,11 @@ export const apiClient = {
     // Get token using the cached function instead of fetching each time
     const token = await getAuthToken();
     
+    if (!token && (endpoint.startsWith('/projects') || endpoint.includes('/git/') || endpoint.includes('/users/'))) {
+      console.warn(`No auth token available for authenticated endpoint: ${endpoint}`);
+      throw new Error('Authentication required. Please login again.');
+    }
+    
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -110,10 +149,21 @@ export const apiClient = {
     });
     
     if (!response.ok) {
-      await handleResponseError(response);
+      await handleResponseError(response, endpoint);
     }
     
-    return await response.json();
+    // If the response is 204 No Content, return an empty object
+    if (response.status === 204) {
+      return {};
+    }
+    
+    // Handle empty responses
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+    
+    return JSON.parse(text);
   },
   
   /**
@@ -125,6 +175,11 @@ export const apiClient = {
     // Get token using the cached function instead of fetching each time
     const token = await getAuthToken();
     
+    if (!token && (endpoint.startsWith('/projects') || endpoint.includes('/git/') || endpoint.includes('/users/'))) {
+      console.warn(`No auth token available for authenticated endpoint: ${endpoint}`);
+      throw new Error('Authentication required. Please login again.');
+    }
+    
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'PUT',
       headers: {
@@ -135,10 +190,16 @@ export const apiClient = {
     });
     
     if (!response.ok) {
-      await handleResponseError(response);
+      await handleResponseError(response, endpoint);
     }
     
-    return await response.json();
+    // Handle empty responses
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+    
+    return JSON.parse(text);
   },
   
   /**
@@ -149,6 +210,11 @@ export const apiClient = {
     // Get token using the cached function instead of fetching each time
     const token = await getAuthToken();
     
+    if (!token && (endpoint.startsWith('/projects') || endpoint.includes('/git/') || endpoint.includes('/users/'))) {
+      console.warn(`No auth token available for authenticated endpoint: ${endpoint}`);
+      throw new Error('Authentication required. Please login again.');
+    }
+    
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: 'DELETE',
       headers: {
@@ -158,10 +224,16 @@ export const apiClient = {
     });
     
     if (!response.ok) {
-      await handleResponseError(response);
+      await handleResponseError(response, endpoint);
     }
     
-    return await response.json();
+    // Handle empty responses
+    const text = await response.text();
+    if (!text) {
+      return {};
+    }
+    
+    return JSON.parse(text);
   },
 
   /**
@@ -206,14 +278,29 @@ async function handleResponseError(response: Response, endpoint?: string) {
   let errorData = {};
   
   try {
-    errorData = await response.json();
-    errorMessage = errorData?.message || errorData?.detail || errorData?.error || errorMessage;
+    const text = await response.text();
+    if (text) {
+      try {
+        errorData = JSON.parse(text);
+        errorMessage = errorData?.message || errorData?.detail || errorData?.error || errorMessage;
+      } catch (e) {
+        // If we can't parse the JSON, use the text as the error message
+        errorMessage = text;
+      }
+    } else {
+      errorMessage = response.statusText || errorMessage;
+    }
   } catch (e) {
-    // If we can't parse the JSON, use status text
+    // If we can't read the response text, use status text
     errorMessage = response.statusText || errorMessage;
   }
   
   console.error(`API Error (${response.status}): ${endpoint || 'unknown endpoint'}`, errorMessage, errorData);
+  
+  // Special handling for project endpoints
+  if (endpoint === '/projects/') {
+    return { error: errorMessage, status: response.status, ...errorData };
+  }
   
   // Special handling for GitHub repository endpoints - return the error instead of throwing
   if (endpoint && (endpoint.includes('/git/repository/') || endpoint.includes('/github/'))) {
@@ -229,6 +316,7 @@ async function handleResponseError(response: Response, endpoint?: string) {
     // Use client-side navigation if available, otherwise fallback
     if (typeof window !== 'undefined') {
       window.location.href = `/login?redirectTo=${encodeURIComponent(window.location.pathname)}`;
+      return { error: 'Authentication required', status: 401 };
     }
   }
   
