@@ -1,6 +1,7 @@
 import os
 import subprocess
 from typing import List, Optional, Dict, Any
+import logging
 
 import httpx
 from httpx import AsyncClient, HTTPStatusError
@@ -9,16 +10,34 @@ from repositories.git_repository import GitRepository
 from schemas.repository import RepositorySchema
 from services.user import UserService
 
+logger = logging.getLogger(__name__)
 
 class GitRepositoryService:
     """Service for interacting with Git repositories (primarily GitHub)."""
     
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
-        self.dir_base = "/mnt/repos" # change in production 
+        # EFS volume mount point in Docker container
+        self.dir_base = "/mnt/repos"
         self.base_url = "https://api.github.com"
         self.webhook_url = "https://kp6tjc7t-8000.uks1.devtunnels.ms//git/repository/github-webhook"
         
+        # Ensure the base directory exists and has proper permissions
+        self._ensure_base_directory()
+    
+    def _ensure_base_directory(self):
+        """Ensure the base directory exists and has proper permissions."""
+        try:
+            if not os.path.exists(self.dir_base):
+                os.makedirs(self.dir_base, exist_ok=True)
+                logger.info(f"Created base directory at {self.dir_base}")
+            
+            # Ensure the directory has proper permissions
+            os.chmod(self.dir_base, 0o755)
+        except Exception as e:
+            logger.error(f"Failed to setup base directory: {str(e)}")
+            raise
+    
     # === API Interaction Methods ===
     
     async def _make_github_request(
@@ -171,30 +190,68 @@ class GitRepositoryService:
         """Clone a repository to local filesystem."""
         clone_url = f"https://{access_token}@github.com/{owner}/{repo_name}.git"
         clone_dir = f"{self.dir_base}/{owner}/{repo_name}"
-        os.makedirs(clone_dir, exist_ok=True)
         
         try:
-            subprocess.run(["git", "clone", clone_url, clone_dir], check=True)
+            # Create parent directories if they don't exist
+            os.makedirs(os.path.dirname(clone_dir), exist_ok=True)
+            
+            # Check if directory already exists
+            if os.path.exists(clone_dir):
+                logger.warning(f"Repository directory already exists at {clone_dir}")
+                return {"message": "Repository directory already exists", "path": clone_dir}
+            
+            # Clone the repository
+            result = subprocess.run(
+                ["git", "clone", clone_url, clone_dir],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            
+            # Set proper permissions for the cloned repository
+            os.chmod(clone_dir, 0o755)
+            
+            logger.info(f"Successfully cloned repository to {clone_dir}")
             return {"message": "Repository cloned successfully", "path": clone_dir}
+            
         except subprocess.CalledProcessError as e:
-            return {"error": f"Clone failed: {str(e)}"}
+            error_msg = f"Clone failed: {e.stderr}"
+            logger.error(error_msg)
+            return {"error": error_msg}
         except Exception as e:
-            return {"error": f"Unexpected error during clone: {str(e)}"}
+            error_msg = f"Unexpected error during clone: {str(e)}"
+            logger.error(error_msg)
+            return {"error": error_msg}
 
     async def pull_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         """Pull the latest changes for a cloned repository."""
-        clone_dir = f"/tmp/repo/{owner}/{repo_name}"
+        clone_dir = f"{self.dir_base}/{owner}/{repo_name}"
         
         if not os.path.exists(clone_dir):
-            return {"error": "Repository not cloned yet"}
+            error_msg = f"Repository not found at {clone_dir}"
+            logger.error(error_msg)
+            return {"error": error_msg}
         
         try:
             original_dir = os.getcwd()
             os.chdir(clone_dir)
-            subprocess.run(["git", "pull"], check=True)
+            
+            result = subprocess.run(
+                ["git", "pull"],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+            
             os.chdir(original_dir)
+            logger.info(f"Successfully pulled repository at {clone_dir}")
             return {"message": "Repository pulled successfully"}
+            
         except subprocess.CalledProcessError as e:
-            return {"error": f"Pull failed: {str(e)}"}
+            error_msg = f"Pull failed: {e.stderr}"
+            logger.error(error_msg)
+            return {"error": error_msg}
         except Exception as e:
-            return {"error": f"Unexpected error: {str(e)}"}
+            error_msg = f"Unexpected error: {str(e)}"
+            logger.error(error_msg)
+            return {"error": error_msg}
