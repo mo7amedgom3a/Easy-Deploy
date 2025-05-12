@@ -57,17 +57,24 @@ resource "aws_route_table_association" "public_route_associations" {
 # ------------------------------------------
 # Private Subnets and Routing
 # ------------------------------------------
-resource "aws_subnet" "private_subnets" {
-  count             = 2
+resource "aws_subnet" "private_subnet1" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + 3)
-  availability_zone = "us-east-1${count.index == 0 ? "a" : "b"}"
-  
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 3)
+  availability_zone = "us-east-1a"
+
   tags = {
-    Name = "private-subnet-${count.index + 1}" # ex private-subnet-1, private-subnet-2
+    Name = "private-subnet-1"
   }
 }
+resource "aws_subnet" "private_subnet2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 4)
+  availability_zone = "us-east-1b"
 
+  tags = {
+    Name = "private-subnet-2"
+  }
+}
 # NAT Gateway for private subnet internet access
 resource "aws_eip" "nat_eip" {
   domain = "vpc"
@@ -101,7 +108,7 @@ resource "aws_route_table" "private_route_table" {
 
 resource "aws_route_table_association" "private_route_associations" {
   count          = 2
-  subnet_id      = aws_subnet.private_subnets[count.index].id
+  subnet_id      = aws_subnet.private_subnet1.id
   route_table_id = aws_route_table.private_route_table.id
 }
 
@@ -141,43 +148,23 @@ resource "aws_security_group" "ecs_tasks_sg" {
     security_groups = [aws_security_group.alb_sg.id]
     description     = "Allow traffic from ALB"
   }
-  # Allow HTTP traffic from ALB to target group
+
+  # Allow EC2 Instance Connect access
   ingress {
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id]
-    description     = "Allow HTTP traffic from ALB"
-  }
-   ingress {
-    from_port       = 0
-    to_port         = 65535
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb_sg.id]
-    description     = "Allow ALB to access ECS EC2 instances"
-  }
-  # mongoDB access
-  ingress {
-    from_port       = 27017
-    to_port         = 27017
-    protocol        = "tcp"
-    security_groups = [aws_security_group.security_group.id]
-    description     = "Allow MongoDB access"
-  }
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = [aws_security_group.security_group.id]
-    description     = "Allow SSH access"
-  }
-  # Egress rules
-  egress {
-    from_port   = 27017
-    to_port     = 27017
+    from_port   = 22
+    to_port     = 22
     protocol    = "tcp"
-    security_groups = [aws_security_group.security_group.id]
-    description = "Allow outbound MongoDB access"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow SSH access"
+  }
+
+  # Allow internal traffic between ECS instances
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    self        = true
+    description = "Allow all internal traffic between ECS instances"
   }
 
   egress {
@@ -193,37 +180,21 @@ resource "aws_security_group" "ecs_tasks_sg" {
   }
 }
 
-resource "aws_security_group" "security_group" {
-  name   = var.aws_security_group_name
+# Security group for EC2 Instance Connect endpoint
+resource "aws_security_group" "eic_endpoint_sg" {
   vpc_id = aws_vpc.main.id
+  name   = "eic-endpoint-sg"
 
-  # Ingress rules
-  ingress {
-    from_port   = 22
-    to_port     = 22  
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow SSH"
-  }
-
-  ingress {
-    from_port   = 27017
-    to_port     = 27017
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow MongoDB access"
-  }
-
-  # Egress rules
+  # Allow outbound SSH to ECS instances
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow all outbound traffic"
+    description = "Allow SSH to ECS instances"
   }
 
   tags = {
-    Name = "ecs-sg"
+    Name = "eic-endpoint-sg"
   }
 }

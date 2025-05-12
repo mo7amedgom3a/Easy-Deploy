@@ -42,8 +42,9 @@ resource "aws_iam_role" "aws_ecs_instance_role" {
     ]
   })
 }
+
 resource "aws_iam_role_policy" "ecs_instance_inline_policy" {
-    name = "ecs-instance-ssm-policy"
+  name = "ecs-instance-ssm-policy"
   role = aws_iam_role.aws_ecs_instance_role.id
 
   policy = jsonencode({
@@ -54,21 +55,32 @@ resource "aws_iam_role_policy" "ecs_instance_inline_policy" {
         Action = [
           "ssm:SendCommand",
           "ssm:DescribeInstanceInformation",
-          "ssm:GetCommandInvocation",
+          "ssm:GetCommandInvocation", 
           "ssm:ListCommands",
           "ssm:ListCommandInvocations",
           "ssmmessages:*",
           "ec2messages:*",
-          "ec2-instance-connect:SendSSHPublicKey"
+          "ec2-instance-connect:SendSSHPublicKey",
+          "ec2:CreateInstanceConnectEndpoint",
+          "ec2:CreateNetworkInterface",
+          "ec2:CreateTags",
+          "iam:CreateServiceLinkedRole",
+          "ec2-instance-connect:OpenTunnel"
         ],
         Resource = "*"
       }
     ]
   })
 }
+
 resource "aws_iam_role_policy_attachment" "aws_ecs_instance_role_policy" {
   role       = aws_iam_role.aws_ecs_instance_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_instance_ssm_policy" {
+  role       = aws_iam_role.aws_ecs_instance_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "aws_ecs_instance_profile" {
@@ -115,8 +127,6 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
-
-
 
 resource "aws_ecs_cluster_capacity_providers" "example" {
   cluster_name = aws_ecs_cluster.ecs_cluster.name
@@ -182,7 +192,7 @@ resource "aws_ecs_service" "ecs_service" {
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   desired_count   = 1
   network_configuration {
-    subnets         = aws_subnet.private_subnets[*].id
+    subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
     security_groups = [aws_security_group.ecs_tasks_sg.id]   
   }
   
