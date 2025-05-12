@@ -17,13 +17,37 @@ data "aws_caller_identity" "current" {}
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = var.aws_ecs_cluster_name
 }
+
 resource "aws_ecr_repository" "app_repo" {
   name = var.repo_name
   image_scanning_configuration {
     scan_on_push = true
   }
   force_delete = true
+}
 
+# Null resource to delete ECR images before repository deletion
+resource "null_resource" "delete_ecr_images" {
+  triggers = {
+    ecr_repository_name = aws_ecr_repository.app_repo.name
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<EOF
+      aws ecr list-images \
+        --repository-name ${self.triggers.ecr_repository_name} \
+        --query 'imageIds[*]' \
+        --output json \
+        | jq -r '.[] | @base64' \
+        | while read i; do
+            imageId=$(echo $i | base64 --decode)
+            aws ecr batch-delete-image \
+              --repository-name ${self.triggers.ecr_repository_name} \
+              --image-ids "$imageId"
+          done
+    EOF
+  }
 }
 
 resource "aws_iam_role" "aws_ecs_instance_role" {
