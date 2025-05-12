@@ -7,6 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
+// Global cache for user profile data
+let userProfileCache: {
+  data: UserProfile | null;
+  timestamp: number;
+} | null = null;
+
+// Cache expiration time: 5 minutes
+const CACHE_EXPIRATION = 5 * 60 * 1000;
+
 interface UserAvatarProps {
   className?: string
   size?: "sm" | "md" | "lg"
@@ -27,6 +36,16 @@ export function UserAvatar({ className, size = "md" }: UserAvatarProps) {
     const fetchUserProfile = async () => {
       try {
         setIsLoading(true)
+        
+        // Check if we have a valid cached profile
+        const now = Date.now();
+        if (userProfileCache && userProfileCache.data && userProfileCache.timestamp > now - CACHE_EXPIRATION) {
+          setProfile(userProfileCache.data);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch profile if no valid cache exists
         const response = await fetch('/api/user/profile')
         
         if (!response.ok) {
@@ -34,11 +53,19 @@ export function UserAvatar({ className, size = "md" }: UserAvatarProps) {
         }
         
         const data = await response.json()
-        setProfile({
+        const profileData = {
           name: data.name || data.username || 'User',
           avatarUrl: data.avatarUrl || '',
           username: data.username || '',
-        })
+        }
+        
+        // Update the cache
+        userProfileCache = {
+          data: profileData,
+          timestamp: now
+        };
+        
+        setProfile(profileData)
       } catch (err) {
         console.error('Error fetching user profile:', err)
         setError(true)
@@ -86,4 +113,9 @@ export function UserAvatar({ className, size = "md" }: UserAvatarProps) {
       </Tooltip>
     </TooltipProvider>
   )
+}
+
+// Add a function to invalidate the user profile cache (can be called on logout)
+export function invalidateUserProfileCache() {
+  userProfileCache = null;
 }

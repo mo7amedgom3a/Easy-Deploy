@@ -4,35 +4,45 @@ import { API_URL } from '@/lib/constants';
 
 export async function GET() {
   try {
-    // Get token from cookies
     const cookieStore = await cookies();
-    const token = cookieStore.get('authToken')?.value;
+    const authToken = cookieStore.get('authToken');
     
-    if (!token) {
-      return NextResponse.json({ isAuthenticated: false });
+    if (!authToken) {
+      return NextResponse.json(
+        { authenticated: false, error: 'No authentication token found' },
+        { status: 401 }
+      );
     }
-
-    // Verify token with backend
+    
+    // Validate the token with the backend
     try {
       const response = await fetch(`${API_URL}/users/github/me/`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken.value}`,
+          'Content-Type': 'application/json',
         },
-        cache: 'no-store',
-        next: { revalidate: 0 }
       });
-
-      if (response.ok) {
-        return NextResponse.json({ isAuthenticated: true });
-      } else {
-        return NextResponse.json({ isAuthenticated: false });
+      
+      if (!response.ok) {
+        return NextResponse.json(
+          { authenticated: false, error: `Token validation failed: ${response.statusText}` },
+          { status: 401 }
+        );
       }
+      
+      return NextResponse.json({ authenticated: true });
     } catch (error) {
-      console.error('Backend validation error:', error);
-      return NextResponse.json({ isAuthenticated: false });
+      console.error('Error validating authentication token:', error);
+      return NextResponse.json(
+        { authenticated: false, error: 'Failed to validate authentication token' },
+        { status: 500 }
+      );
     }
   } catch (error) {
-    console.error('Auth check error:', error);
-    return NextResponse.json({ isAuthenticated: false });
+    console.error('Error checking authentication:', error);
+    return NextResponse.json(
+      { authenticated: false, error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

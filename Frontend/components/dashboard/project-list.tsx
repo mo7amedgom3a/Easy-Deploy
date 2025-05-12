@@ -5,32 +5,61 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Github, MoreHorizontal, Rocket, XCircle, Clock } from "lucide-react"
-import { Project, projectsService } from "@/lib/services"
+import { CheckCircle2, Github, MoreHorizontal, Rocket, XCircle, Clock, AlertCircle } from "lucide-react"
+import { Project, projectsService, ApiErrorResponse } from "@/lib/services"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export function ProjectList() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retries, setRetries] = useState(0);
+  const [showGitHubFallback, setShowGitHubFallback] = useState(false);
   
   useEffect(() => {
     const fetchProjects = async () => {
       setIsLoading(true);
       setError(null);
       try {
+        console.log("Fetching projects data...");
         const data = await projectsService.getProjects();
-        // If we need to limit the number of projects displayed on dashboard
-        setProjects(data.slice(0, 3));
+        
+        // Check if the response is an error
+        if (data && !Array.isArray(data) && 'error' in data) {
+          console.error("Error in project data:", data.error);
+          setError(`Failed to load projects: ${data.error}`);
+          setShowGitHubFallback(true);
+          setProjects([]);
+        }
+        // Check if the response is an array
+        else if (Array.isArray(data)) {
+          console.log(`Fetched ${data.length} projects`);
+          // If we need to limit the number of projects displayed on dashboard
+          setProjects(data.slice(0, 3));
+          setShowGitHubFallback(false);
+        } 
+        // Handle any other unexpected response format
+        else {
+          console.log("No projects found or invalid data format");
+          setProjects([]);
+          setShowGitHubFallback(true);
+        }
       } catch (error) {
         console.error("Error fetching projects:", error);
-        setError("Failed to load projects. Please try again later.");
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        setError(`Failed to load projects: ${errorMessage}`);
+        setShowGitHubFallback(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProjects();
-  }, []);
+  }, [retries]);
+
+  const handleRetry = () => {
+    setRetries(prev => prev + 1);
+  };
 
   if (isLoading) {
     return (
@@ -42,11 +71,25 @@ export function ProjectList() {
   
   if (error) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <p>{error}</p>
-        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-          Retry
-        </Button>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+        
+        <div className="flex items-center justify-between gap-4">
+          <Button variant="outline" onClick={handleRetry} className="mt-4">
+            Retry
+          </Button>
+          
+          {showGitHubFallback && (
+            <Button asChild variant="default" className="mt-4">
+              <Link href="/dashboard/projects/new">Connect GitHub Repository</Link>
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -54,9 +97,9 @@ export function ProjectList() {
   if (projects.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
-        <p>No GitHub repositories found</p>
+        <p>No projects found</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/dashboard/projects/new">Connect GitHub Repository</Link>
+          <Link href="/dashboard/projects/new">Create New Project</Link>
         </Button>
       </div>
     );
