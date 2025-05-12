@@ -1,0 +1,33 @@
+---
+- name: Install Python 3.8
+  hosts: webserver
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Install required packages
+      raw: |
+        yum update -y
+        yum install -y gcc openssl-devel bzip2-devel libffi-devel xz-devel wget
+
+    - name: Download Python 3.8 source
+      raw: |
+        cd /opt
+        wget https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz
+        tar xzf Python-3.8.18.tgz
+
+    - name: Build and install Python 3.8
+      raw: |
+        cd /opt/Python-3.8.18
+        ./configure --enable-optimizations
+        make altinstall
+
+    - name: Create symlink for python3.8
+      raw: |
+        ln -sf /usr/local/bin/python3.8 /usr/bin/python3
+        ln -sf /usr/local/bin/pip3.8 /usr/bin/pip3
+
+    - name: Install pip
+      raw: |
+        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        python3.8 get-pip.py 

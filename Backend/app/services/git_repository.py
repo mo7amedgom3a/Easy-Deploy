@@ -199,7 +199,8 @@ class GitRepositoryService:
             if os.path.exists(clone_dir):
                 logger.warning(f"Repository directory already exists at {clone_dir}")
                 return {"message": "Repository directory already exists", "path": clone_dir}
-            
+            else:
+                logger.info(f"Cloning repository to {clone_dir}")
             # Clone the repository
             result = subprocess.run(
                 ["git", "clone", clone_url, clone_dir],

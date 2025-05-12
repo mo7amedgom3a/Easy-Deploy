@@ -1,8 +1,8 @@
-docker_gpg_url: https://download.docker.com/linux/ubuntu/gpg
-docker_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-aws_cli_zip_url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
-aws_cli_zip_dest: "/tmp/awscliv2.zip"
-aws_cli_unzip_dest: "/tmp"
-aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
-aws_account_id: "{{ lookup('env', 'AWS_ACCOUNT_ID') | default('123456789012') }}"
-ecr_registry: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"
+# docker_gpg_url: https://download.docker.com/linux/ubuntu/gpg
+# docker_repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+# # aws_cli_zip_url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+# # aws_cli_zip_dest: "/tmp/awscliv2.zip"
+# # aws_cli_unzip_dest: "/tmp"
+# # aws_region: "{{ lookup('env', 'AWS_REGION') | default('us-east-1') }}"
+# # aws_account_id: "{{ lookup('env', 'AWS_ACCOUNT_ID') | default('123456789012') }}"
+# # ecr_registry: "{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com"

@@ -1,39 +1,39 @@
-- name: Install Docker prerequisites
-  apt:
-    name:
-      - apt-transport-https
-      - ca-certificates
-      - curl
-      - software-properties-common
-    state: present
+# - name: Install Docker prerequisites
+#   apt:
+#     name:
+#       - apt-transport-https
+#       - ca-certificates
+#       - curl
+#       - software-properties-common
+#     state: present
 
-- name: Add Docker GPG key
-  apt_key:
-    url: "{{ docker_gpg_url }}"
-    state: present
+# - name: Add Docker GPG key
+#   apt_key:
+#     url: "{{ docker_gpg_url }}"
+#     state: present
 
-- name: Add Docker repo
-  apt_repository:
-    repo: "{{ docker_repo }}"
-    state: present
+# - name: Add Docker repo
+#   apt_repository:
+#     repo: "{{ docker_repo }}"
+#     state: present
 
-- name: Update apt after Docker repo
-  apt:
-    update_cache: yes
+# - name: Update apt after Docker repo
+#   apt:
+#     update_cache: yes
 
-- name: Install Docker
-  apt:
-    name: docker-ce
-    state: present
+# - name: Install Docker
+#   apt:
+#     name: docker-ce
+#     state: present
 
-- name: Enable and start Docker
-  systemd:
-    name: docker
-    enabled: yes
-    state: started
+# - name: Enable and start Docker
+#   systemd:
+#     name: docker
+#     enabled: yes
+#     state: started
 
-- name: Add ubuntu to docker group
-  user:
-    name: ubuntu
-    groups: docker
-    append: yes
+# - name: Add ubuntu to docker group
+#   user:
+#     name: ubuntu
+#     groups: docker
+#     append: yes
