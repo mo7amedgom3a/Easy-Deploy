@@ -152,8 +152,9 @@ class DeployService:
                 raise ValueError("Invalid root folder path")
                 
             deploy_data["absolute_path"] = os.path.join(clone_data["path"], root_path)
-        
+            
         except Exception as e:
             raise ValueError(f"Error cloning repository: {str(e)}")
 
+        
         return await self.deploy_repository.create_deploy(Deploy(**deploy_data))

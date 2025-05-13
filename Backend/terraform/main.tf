@@ -108,7 +108,7 @@ resource "aws_iam_role_policy_attachment" "ecs_instance_ssm_policy" {
 }
 
 resource "aws_iam_instance_profile" "aws_ecs_instance_profile" {
-  name = var.aws_ecs_instance_profile_name
+  name_prefix = "ecs-instance-profile-"
   role = aws_iam_role.aws_ecs_instance_role.name
 }
 
@@ -214,7 +214,7 @@ resource "aws_ecs_service" "ecs_service" {
   name            = var.aws_ecs_service_name
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
-  desired_count   = 1
+  desired_count   = 2
   network_configuration {
     subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
     security_groups = [aws_security_group.ecs_tasks_sg.id]   
@@ -232,7 +232,6 @@ resource "aws_ecs_service" "ecs_service" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
-    
     container_name   = var.aws_ecs_task_container_name
     container_port   = var.aws_ecs_task_container_port
   }

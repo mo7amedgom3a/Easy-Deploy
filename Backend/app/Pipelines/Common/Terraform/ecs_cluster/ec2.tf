@@ -34,7 +34,7 @@ resource "aws_launch_template" "ecs_lt" {
 }
 
 resource "aws_autoscaling_group" "ecs_asg" {
-  vpc_zone_identifier = [aws_subnet.subnet.id]
+  pc_zone_videntifier = [aws_subnet.subnet.id]
   desired_capacity    = 1
   max_size            = 2
   min_size            = 1

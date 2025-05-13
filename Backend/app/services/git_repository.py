@@ -185,6 +185,28 @@ class GitRepositoryService:
             return repo_data.dict()
         except Exception as e:
             return {"error": f"Failed to save repository: {str(e)}"}
+        
+
+    async def delete_repo(self, owner: str, repo_name: str) -> dict:
+        """Delete a repository from the filesystem."""
+        try:
+            repo_path = f"{self.dir_base}/{owner}/{repo_name}"
+            if os.path.exists(repo_path):
+                subprocess.run(["rm", "-rf", repo_path], check=True)
+                return {"message": "Repository deleted successfully"}
+            else:
+                return {"error": "Repository not found"}
+        except Exception as e:
+            return {"error": f"Failed to delete repository: {str(e)}"}
+        
+
+    async def get_tree_directory(self, owner: str, repo_name: str, access_token: str) -> dict:
+        """Get the tree directory for owner local directory."""
+        owner_dir = f"{self.dir_base}/{owner}"
+        if os.path.exists(owner_dir):
+            return {"message": "Owner directory exists", "path": owner_dir}
+        else:
+            return {"error": "Owner directory not found"}
 
     async def clone_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
         """Clone a repository to local filesystem."""
