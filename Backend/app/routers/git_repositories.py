@@ -228,7 +228,7 @@ async def pull_repository(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/repository/{owner}/tree", response_model=None, dependencies=[Depends(get_current_user)])
+@router.get("/toreposiry/{owner}/tree", response_model=None, dependencies=[Depends(get_current_user)])
 async def get_tree_directory(
     owner: str,
     git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
@@ -241,8 +241,7 @@ async def get_tree_directory(
         # Get the access key from the token payload
         access_key = await get_access_key_from_token_payload(token)
         result = await git_repository_service.get_tree_directory(owner=owner, access_token=access_key)
-        if "error" in result:
-            raise HTTPException(status_code=400, detail=result["error"])
+        
         return result
 
     except HTTPException as http_ex:
