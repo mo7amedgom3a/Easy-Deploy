@@ -194,10 +194,11 @@ class GitRepositoryService:
         try:
             # Create parent directories if they don't exist
             os.makedirs(os.path.dirname(clone_dir), exist_ok=True)
-            
+
             # Check if directory already exists
             if os.path.exists(clone_dir):
                 logger.warning(f"Repository directory already exists at {clone_dir}")
+
                 return {"message": "Repository directory already exists", "path": clone_dir}
             else:
                 print("Cloning repository to", clone_dir)
@@ -208,6 +209,8 @@ class GitRepositoryService:
                 capture_output=True,
                 text=True
             )
+            # print the current working directory
+            print("Current working directory:", os.getcwd())
             
             # Set proper permissions for the cloned repository
             os.chmod(clone_dir, 0o755)
