@@ -24,6 +24,10 @@ COPY requirements.txt .
 
 # Install system 
 RUN pip3 install --no-cache-dir -r requirements.txt
+# Install Git and other required packages
+RUN apt-get update && \
+    apt-get install -y git && \
+    apt-get clean
 
 COPY . .
 
