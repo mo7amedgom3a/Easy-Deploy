@@ -32,10 +32,17 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 RUN apt-get update && \
     apt-get install -y git gnupg software-properties-common curl && \
     apt-get clean
+# Install required packages for adding repositories
+RUN apt-get update && \
+    apt-get install -y \
+    wget \
+    lsb-release \
+    software-properties-common \
+    gnupg
 
-# install terraform
-RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
-    apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" && \
+# Install Terraform
+RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list && \
     apt-get update && \
     apt-get install -y terraform && \
     apt-get clean
