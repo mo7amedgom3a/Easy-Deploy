@@ -26,6 +26,7 @@ async def create_deploy(
         # Get the access key from the token payload
               
         access_token = await get_access_key_from_token_payload(token)
+        
         return await deploy_service.create_deploy(deploy, access_token=access_token, user=user)
     except HTTPException as http_ex:
         raise http_ex

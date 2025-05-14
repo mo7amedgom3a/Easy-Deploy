@@ -54,7 +54,7 @@ resource "aws_route_table_association" "public_route_association" {
 # ------------------------------------------
 # Private Subnet and Routing
 # ------------------------------------------
-resource "aws_subnet" "private_subnet" {
+resource "aws_subnet" "private_subnet1" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 2)
   availability_zone = "us-east-1a"
@@ -97,7 +97,7 @@ resource "aws_route_table" "private_route_table" {
 }
 
 resource "aws_route_table_association" "private_route_association" {
-  subnet_id      = aws_subnet.private_subnet.id
+  subnet_id      = aws_subnet.private_subnet1.id
   route_table_id = aws_route_table.private_route_table.id
 }
 
@@ -119,8 +119,8 @@ resource "aws_security_group" "security_group" {
   
   # Allow HTTP traffic to container
   ingress {
-    from_port   = 5000
-    to_port     = 5000
+    from_port   = var.ecs_task_container_port
+    to_port     = var.ecs_task_container_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow ALB traffic to ECS container"
@@ -148,5 +148,31 @@ resource "aws_security_group" "security_group" {
   
   tags = {
     Name = "${var.user_github_id}-sg"
+  }
+}
+# Security group for EC2 Instance Connect endpoint
+resource "aws_security_group" "eic_endpoint_sg" {
+  name   = "eic-endpoint-sg"
+  vpc_id = aws_vpc.main.id
+
+  # Allow inbound traffic from anywhere
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow inbound traffic from anywhere"
+  }
+
+  # Allow all outbound traffic
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
+  }
+  tags = {
+    Name = "${var.user_github_id}-eic-endpoint-sg"
   }
 }

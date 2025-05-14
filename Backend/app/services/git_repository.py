@@ -200,11 +200,12 @@ class GitRepositoryService:
             return {"error": f"Failed to delete repository: {str(e)}"}
         
 
-    async def get_tree_directory(self, owner: str, repo_name: str, access_token: str) -> dict:
+    async def get_tree_directory(self, owner: str, access_token: str) -> dict:
         """Get the tree directory for owner local directory."""
         owner_dir = f"{self.dir_base}/{owner}/"
+        list_dirs = os.listdir(owner_dir)
         if os.path.exists(owner_dir):
-            return {"message": "Owner directory exists", "path": owner_dir}
+            return {"message": "Owner directory exists", "list_dirs": list_dirs}
         else:
             return {"error": "Owner directory not found"}
 

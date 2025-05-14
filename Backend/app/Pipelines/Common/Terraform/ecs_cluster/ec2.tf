@@ -34,7 +34,7 @@ resource "aws_launch_template" "ecs_lt" {
 }
 
 resource "aws_autoscaling_group" "ecs_asg" {
-  pc_zone_videntifier = [aws_subnet.subnet.id]
+  vpc_zone_identifier = [aws_subnet.private_subnet1.id]
   desired_capacity    = 1
   max_size            = 2
   min_size            = 1
@@ -57,7 +57,7 @@ resource "aws_lb" "ecs_nlb" {
   internal           = false
   load_balancer_type = "network"
   security_groups    = [aws_security_group.security_group.id]
-  subnets = [aws_subnet.subnet.id]
+  subnets = [aws_subnet.public_subnet.id]
 
   tags = {
     Name = "ecs-nlb-${var.user_github_id}"
@@ -82,7 +82,7 @@ resource "aws_lb_listener" "ecs_nlb_listener" {
 
 resource "aws_lb_target_group" "ecs_tg" {
   name        = var.aws_target_group
-  port        = 5000
+  port        = var.ecs_task_container_port
   protocol    = "TCP"
   target_type = "ip"
   vpc_id      = aws_vpc.main.id

@@ -5,6 +5,8 @@ WORKDIR /app
 # Define build arguments
 ARG CLIENT_ID
 ARG CLIENT_SECRET
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
 ARG CONNECTION_STRING
 ARG DATABASE_NAME
 ARG JWT_ALGORITHM
@@ -14,6 +16,8 @@ ARG EXPIRATION_TIME
 # Set environment variables from build arguments
 ENV CLIENT_ID=${CLIENT_ID}
 ENV CLIENT_SECRET=${CLIENT_SECRET}
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 ENV CONNECTION_STRING=${CONNECTION_STRING}
 ENV DATABASE_NAME=${DATABASE_NAME}
 ENV JWT_ALGORITHM=${JWT_ALGORITHM}
@@ -26,8 +30,31 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 # Install Git and other required packages
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git gnupg software-properties-common curl && \
     apt-get clean
+
+# install terraform
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
+    apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" && \
+    apt-get update && \
+    apt-get install -y terraform && \
+    apt-get clean
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
+    apt-get install -y unzip && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws awscliv2.zip && \
+    apt-get remove -y unzip && \
+    apt-get clean
+
+# Configure AWS CLI with credentials and default region
+RUN aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID} && \
+    aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY} && \
+    aws configure set default.region us-east-1 && \
+    aws configure set output json
+
 
 COPY . .
 

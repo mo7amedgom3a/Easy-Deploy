@@ -10,10 +10,14 @@ class BaseDeploySchema(BaseModel):
     owner: str
     branch: str
     framework: Optional[str] = None
-    root_folder_path: str
+    root_folder_path: str = ""
     app_entry_point: Optional[str] = None
-    port: Optional[str] = None
+    port: Optional[int] = None
     environment_variables: Optional[Dict[str, str]] = None
+
+    class Config:
+        orm_mode = True
+        extra = "allow"
 
 
 class DeployCreateSchema(BaseDeploySchema):
@@ -37,3 +41,6 @@ class DeployUpdate(BaseModel):
     pipline_path: Optional[str] = None
     webhook_id: Optional[str] = None
     updated_at: datetime = datetime.now()
+
+    class Config:
+        orm_mode = True

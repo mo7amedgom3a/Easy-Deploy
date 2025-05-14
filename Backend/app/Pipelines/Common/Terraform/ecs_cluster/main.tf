@@ -4,15 +4,14 @@ terraform {
     bucket         = "my-deployment-states"
     dynamodb_table = "terraform-locks"
     encrypt        = true
+    key            = "ecs-cluster/${var.user_github_id}/terraform.tfstate"
     region         = "us-east-1"
   }
-
 }
 
 provider "aws" {
   region = var.aws_region
-  # access_key = var.aws_access_key
-  # secret_key = var.aws_secret_access_key
+ 
 }
 
   resource "aws_ecs_cluster" "ecs_cluster" {
@@ -71,7 +70,40 @@ resource "aws_iam_role" "ecs_task_execution_role" {
     ]
   })
 }
+resource "aws_iam_role_policy" "ecs_instance_inline_policy" {
+  name = "ecs-instance-ssm-policy"
+  role = aws_iam_role.aws_ecs_instance_role.id
 
+   policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ssm:SendCommand",
+          "ssm:DescribeInstanceInformation",
+          "ssm:GetCommandInvocation", 
+          "ssm:ListCommands",
+          "ssm:ListCommandInvocations",
+          "ssmmessages:*",
+          "ec2messages:*",
+          "ec2-instance-connect:SendSSHPublicKey",
+          "ec2:CreateInstanceConnectEndpoint",
+          "ec2:CreateNetworkInterface",
+          "ec2:CreateTags",
+          "iam:CreateServiceLinkedRole",
+          "ec2-instance-connect:OpenTunnel"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+# Attach ECS Instance policy
+resource "aws_iam_role_policy_attachment" "ecs_instance_policy_attachment" {
+  role       = aws_iam_role.aws_ecs_instance_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
 # Attach ECS Task Execution policy
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
@@ -116,7 +148,7 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 1
   
   network_configuration {
-    subnets         = [aws_subnet.subnet.id]
+    subnets         = [aws_subnet.private_subnet1.id]
     security_groups = [aws_security_group.security_group.id]
     
   }
@@ -141,5 +173,4 @@ resource "aws_ecs_service" "ecs_service" {
     aws_lb_listener.ecs_nlb_listener,
     aws_lb_target_group.ecs_tg
   ]
-
 }

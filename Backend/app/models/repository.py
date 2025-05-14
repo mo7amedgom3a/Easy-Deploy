@@ -14,4 +14,7 @@ class Repository(BaseModel):
     blob_sha: str
     description: str | None = None
     languages: List[str] | None = None
+
+    class Config:
+        orm_mode = True
     

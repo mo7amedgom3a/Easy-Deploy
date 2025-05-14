@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Dict
 
@@ -19,9 +20,9 @@ class DeployService:
         self.aws_user_service = aws_user_service
         self.git_repository_service = git_repository_service
         self.base_pipeline_path = "app/Pipelines/"
+        self.project_root = Path(__file__).resolve().parent.parent.parent
         self.framework_config = self._load_framework_config()
         self.supported_frameworks = self._get_supported_frameworks()
-        
     def _validate_path(self, path: str) -> bool:
         """Validate path to prevent directory traversal attacks."""
         normalized = os.path.normpath(path)
@@ -84,10 +85,12 @@ class DeployService:
 
     async def create_deploy(self, deploy: DeployCreateSchema, access_token: str, user: UserSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
+        
         if not access_token or not isinstance(access_token, str):
             raise ValueError("Invalid access token")
-            
+        
         aws_user = await self.get_aws_user(user.github_id)
+       
         if not aws_user:
             # if the first deploy, create a new user
             try:
@@ -108,7 +111,9 @@ class DeployService:
             )
 
         # Merge user input with defaults (user input overrides defaults if provided)
+
         deploy_data = deploy.dict(exclude_unset=True)
+        
         
         # Sanitize commands before using them
         build_command = self._sanitize_commands(deploy_data.get("build_command") or framework_defaults["build_command"])
@@ -121,6 +126,7 @@ class DeployService:
         deploy_data["pipeline_path"] = self._get_pipeline_path(framework, framework_type)
         deploy_data["user_github_id"] = user.github_id
         deploy_data["status"] = "pending"
+        deploy_data["owner"] = deploy.owner
         deploy_data["webhook_id"] = None
 
         # Validate the framework type and ensure it matches the provided framework.
@@ -153,6 +159,30 @@ class DeployService:
                 
             deploy_data["absolute_path"] = os.path.join(clone_data["path"], root_path)
             
+            # copy dockerfile from PiplinePath to absolute_path
+            dockerfile_path = os.path.join(self.project_root, deploy_data["pipeline_path"], "Dockerfile")
+            dockerfile_dest = os.path.join(deploy_data["absolute_path"], "Dockerfile")
+           
+            print(dockerfile_path)
+            # Check if Dockerfile already exists and remove it
+            if os.path.exists(dockerfile_dest):
+                os.remove(dockerfile_dest)
+            shutil.copy(dockerfile_path, deploy_data["absolute_path"])
+            print(deploy_data["absolute_path"])
+
+            # copy terraform files from app/Pipelines/Common/Terraform to absolute_path
+            terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform")
+            terraform_dest = os.path.join(deploy_data["absolute_path"], "terraform")
+            
+            # Check if terraform folder exists and remove it
+            if os.path.exists(terraform_dest):
+                shutil.rmtree(terraform_dest)
+            shutil.copytree(terraform_path, terraform_dest)
+            # create .env file in absolute_path based on deploy_data.environment_variables
+            with open(os.path.join(deploy_data["absolute_path"], ".env"), "w") as f:
+                for key, value in deploy_data["environment_variables"].items():
+                    f.write(f"{key}={value}\n")
+ 
         except Exception as e:
             raise ValueError(f"Error cloning repository: {str(e)}")
 

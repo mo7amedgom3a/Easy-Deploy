@@ -9,3 +9,4 @@ motor # for async mongo db
 httpx # async HTTP requests
 python-jose # (for JWT)
 python_terraform 
+boto3

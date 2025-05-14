@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 
 class Deploy(BaseModel):
@@ -17,6 +17,9 @@ class Deploy(BaseModel):
     status: Optional[str] = None  # e.g., "pending", "in_progress", "completed", "failed"
     app_entry_point: Optional[str] = None  # e.g., "main.py" or "app.py"
     port: Optional[int] = None 
-    environment_variables: Optional[dict] = None  # environment variables for the application
+    environment_variables: Optional[Dict[str, str]] = None  # environment variables for the application
     created_at: datetime = datetime.now()
     updated_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True
