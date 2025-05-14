@@ -59,7 +59,9 @@ class AWSUserService:
         output = self.tf.output(json=True)
         print("Terraform output:", output)
     
-
+        if not output:
+            raise HTTPException(status_code=500, detail="Failed to get Terraform output")
+        
         # Create a new AWSUser object with Terraform outputs
         current_user = AWSUser(
             user_github_id=github_id,

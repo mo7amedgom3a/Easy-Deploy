@@ -5,8 +5,11 @@ import shutil
 from pathlib import Path
 from typing import Dict
 
+from fastapi import HTTPException
+from python_terraform import Terraform
 from models.deploy import Deploy
 from repositories.deploy import DeployRepository
+import subprocess
 from schemas.deploy_schema import DeployCreateSchema
 from schemas.aws_user_schema import AWSUserSchema
 from schemas.user_schema import UserSchema
@@ -89,6 +92,9 @@ class DeployService:
         if not access_token or not isinstance(access_token, str):
             raise ValueError("Invalid access token")
         
+        if not user.github_id:
+            raise ValueError("User's GitHub ID is required")
+            
         aws_user = await self.get_aws_user(user.github_id)
        
         if not aws_user:
@@ -100,6 +106,9 @@ class DeployService:
         if not aws_user:
             raise ValueError("AWS user not found or could not be created.")
        
+        if not deploy.framework:
+            raise ValueError("Framework is required")
+            
         framework = deploy.framework.lower()
         framework_type = self._get_framework_type(framework)
 
@@ -159,16 +168,23 @@ class DeployService:
                 
             deploy_data["absolute_path"] = os.path.join(clone_data["path"], root_path)
             
-            # copy dockerfile from PiplinePath to absolute_path
-            dockerfile_path = os.path.join(self.project_root, deploy_data["pipeline_path"], "Dockerfile")
-            dockerfile_dest = os.path.join(deploy_data["absolute_path"], "Dockerfile")
-           
-            print(dockerfile_path)
-            # Check if Dockerfile already exists and remove it
-            if os.path.exists(dockerfile_dest):
-                os.remove(dockerfile_dest)
-            shutil.copy(dockerfile_path, deploy_data["absolute_path"])
-            print(deploy_data["absolute_path"])
+            # Copy all files from pipeline_path to absolute_path
+            pipeline_source = os.path.join(self.project_root, deploy_data["pipeline_path"])
+            
+            # Get list of all files in pipeline directory
+            pipeline_files = os.listdir(pipeline_source)
+            
+            # Copy each file from pipeline directory to absolute path
+            for file in pipeline_files:
+                source_path = os.path.join(pipeline_source, file)
+                dest_path = os.path.join(deploy_data["absolute_path"], file)
+                
+                # Copy file or directory if it doesn't exist
+                if not os.path.exists(dest_path):
+                    if os.path.isfile(source_path):
+                        shutil.copy(source_path, dest_path)
+                    else:
+                        shutil.copytree(source_path, dest_path)
 
             # copy terraform files from app/Pipelines/Common/Terraform to absolute_path
             terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform")
@@ -186,5 +202,37 @@ class DeployService:
         except Exception as e:
             raise ValueError(f"Error cloning repository: {str(e)}")
 
+        # Initialize Terraform
+        try:
+            tf = Terraform(working_dir=os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster"))
+
+            vars = {
+                "user_github_id": deploy_data["user_github_id"],
+                "aws_access_key": aws_user.aws_access_key_id,
+                "aws_secret_access_key": aws_user.aws_secret_access_key,
+                "repo_name": "my-app",
+                "ecs_task_container_port": deploy_data["port"],
+                "ecs_task_host_port": deploy_data["port"]
+            }
+            subprocess.run(["sh", "setup_backend.sh", deploy_data["user_github_id"]], cwd=os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster"), capture_output=True, text=True)
+            # apply the terraform 
+            print("Applying Terraform...")
+            return_code, stdout, stderr = tf.apply(skip_plan=True, var=vars, capture_output=False, auto_approve=True)
+            if return_code != 0:
+                raise HTTPException(status_code=500, detail="Failed to apply Terraform configuration")
+            print("Getting output...")
+            output = tf.output(json=True)
+            print(output)
+            if not output or "load_balancer_dns" not in output:
+                raise ValueError("Invalid Terraform output format or missing load_balancer_dns output")
+            dns_load_balancer = output["load_balancer_dns"]["value"]
+        except Exception as e:
+            raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
         
-        return await self.deploy_repository.create_deploy(Deploy(**deploy_data))
+        deploy_data["load_balancer_url"] = dns_load_balancer
+        print(deploy_data)
+        # Create a new DeployCreateSchema from the deploy data
+        
+        
+        # Create the deploy in the repository
+        return await self.deploy_repository.create_deploy(deploy_data)

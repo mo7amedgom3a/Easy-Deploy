@@ -1,2 +1,9 @@
-public_key_path  = "~/.ssh/id_rsa.pub"
+aws_region = "us-east-1"
+user_github_id = "99754570"
+public_key_path = "~/.ssh/id_rsa.pub"
 private_key_path = "~/.ssh/id_rsa"
+aws_access_key = "YOUR_AWS_ACCESS_KEY"
+aws_secret_access_key = "YOUR_AWS_SECRET_ACCESS_KEY"
+repo_name = "easy-deploy"
+ecs_task_container_port = 80
+ecs_task_host_port = 80

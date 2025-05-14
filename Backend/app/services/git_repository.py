@@ -18,7 +18,7 @@ class GitRepositoryService:
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
         # EFS volume mount point in Docker container
-        self.dir_base = "/mnt/repos"
+        self.dir_base = "/tmp/mnt/repos"
         self.base_url = "https://api.github.com"
         self.webhook_url = "https://kp6tjc7t-8000.uks1.devtunnels.ms//git/repository/github-webhook"
         

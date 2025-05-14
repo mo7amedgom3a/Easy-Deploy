@@ -66,13 +66,12 @@ resource "aws_subnet" "private_subnet1" {
 
 # NAT Gateway for private subnet internet access
 resource "aws_eip" "nat_eip" {
-  domain = "vpc"
+  vpc = true
   
   tags = {
     Name = "${var.user_github_id}-nat-eip"
   }
 }
-
 resource "aws_nat_gateway" "nat_gateway" {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.public_subnet.id
@@ -117,25 +116,14 @@ resource "aws_security_group" "security_group" {
     description = "Allow SSH access"
   }
   
-  # Allow HTTP traffic to container
+  # Allow HTTP traffic and container port access
   ingress {
-    from_port   = var.ecs_task_container_port
+    from_port   = 80
     to_port     = var.ecs_task_container_port
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow ALB traffic to ECS container"
+    description = "Allow HTTP and container traffic"
   }
-  
-  # Allow HTTP traffic to load balancer
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow HTTP traffic for load balancer"
-  }
-  
-  
 
   # Allow all outbound traffic
   egress {
@@ -150,6 +138,7 @@ resource "aws_security_group" "security_group" {
     Name = "${var.user_github_id}-sg"
   }
 }
+
 # Security group for EC2 Instance Connect endpoint
 resource "aws_security_group" "eic_endpoint_sg" {
   name   = "eic-endpoint-sg"

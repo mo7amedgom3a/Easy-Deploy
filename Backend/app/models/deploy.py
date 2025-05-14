@@ -13,6 +13,7 @@ class Deploy(BaseModel):
     absolute_path: Optional[str] = None  
     build_command: Optional[str] = None  
     run_command: Optional[str] = None 
+    load_balancer_url: Optional[str] = None
     webhook_id: Optional[str] = None
     status: Optional[str] = None  # e.g., "pending", "in_progress", "completed", "failed"
     app_entry_point: Optional[str] = None  # e.g., "main.py" or "app.py"
