@@ -4,11 +4,11 @@ WORKDIR /app
 
 # Define build arguments
 ARG PORT=5000
-ARG APP_NAME=app.py
+ARG ENTRY_POINT=app.py
 
 # Set environment variables from the arguments
 ENV PORT=${PORT}
-ENV APP_NAME=${APP_NAME}
+ENV ENTRY_POINT=${ENTRY_POINT}
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -19,4 +19,4 @@ COPY . .
 EXPOSE ${PORT}
 
 # Use the application name from the arguments
-CMD ["sh", "-c", "python ${APP_NAME}"]
+CMD ["sh", "-c", "python ${ENTRY_POINT}"]

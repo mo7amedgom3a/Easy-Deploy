@@ -15,3 +15,14 @@ output "load_balancer_dns" {
   value = aws_lb.ecs_alb.dns_name
 }
 
+
+# shared puplic subnet
+output "public_subnet_id" {
+  value = aws_subnet.public_subnet_shared.id
+}
+
+# shared private subnet
+output "private_subnet_id" {
+  value = aws_subnet.private_subnet_shared.id
+}
+

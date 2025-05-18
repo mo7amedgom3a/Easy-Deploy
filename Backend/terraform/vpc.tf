@@ -33,6 +33,16 @@ resource "aws_subnet" "public_subnets" {
     Name = "public-subnet-${count.index + 1}" # ex public-subnet-1, public-subnet-2
   }
 }
+# public subnet for shared users
+resource "aws_subnet" "public_subnet_shared" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 5)
+  availability_zone = "us-east-1a"
+  map_public_ip_on_launch = true
+  tags = {
+    Name = "public-subnet-shared"
+  }
+}
 
 
 resource "aws_route_table" "public_route_table" {
@@ -51,6 +61,11 @@ resource "aws_route_table" "public_route_table" {
 resource "aws_route_table_association" "public_route_associations" {
   count          = 2
   subnet_id      = aws_subnet.public_subnets[count.index].id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+resource "aws_route_table_association" "public_subnet_shared_association" {
+  subnet_id      = aws_subnet.public_subnet_shared.id
   route_table_id = aws_route_table.public_route_table.id
 }
 
@@ -75,6 +90,30 @@ resource "aws_subnet" "private_subnet2" {
     Name = "private-subnet-2"
   }
 }
+# private subnet for shared users
+resource "aws_subnet" "private_subnet_shared" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 6)
+  availability_zone = "us-east-1a"
+  tags = {
+    Name = "private-subnet-shared"
+  }
+}
+
+resource "aws_route_table" "private_route_table_shared" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+
+  tags = {
+    Name = "private-route-table-shared"
+  }
+}
+
+
 # NAT Gateway for private subnet internet access
 resource "aws_eip" "nat_eip" {
   domain = "vpc"
@@ -110,6 +149,8 @@ resource "aws_nat_gateway" "nat_gateway2" {
   }
 }
 
+
+
 resource "aws_route_table" "private_route_table1" {
   vpc_id = aws_vpc.main.id
 
@@ -136,6 +177,9 @@ resource "aws_route_table" "private_route_table2" {
   }
 }
 
+
+
+
 resource "aws_route_table_association" "private_route_association1" {
   subnet_id      = aws_subnet.private_subnet1.id
   route_table_id = aws_route_table.private_route_table1.id
@@ -144,6 +188,10 @@ resource "aws_route_table_association" "private_route_association1" {
 resource "aws_route_table_association" "private_route_association2" {
   subnet_id      = aws_subnet.private_subnet2.id
   route_table_id = aws_route_table.private_route_table2.id
+}
+resource "aws_route_table_association" "private_route_association_shared" {
+  subnet_id      = aws_subnet.private_subnet_shared.id
+  route_table_id = aws_route_table.private_route_table_shared.id
 }
 
 # ------------------------------------------

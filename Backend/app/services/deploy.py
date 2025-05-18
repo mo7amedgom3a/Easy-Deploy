@@ -15,6 +15,7 @@ from schemas.aws_user_schema import AWSUserSchema
 from schemas.user_schema import UserSchema
 from services.aws_user import AWSUserService
 from services.git_repository import GitRepositoryService
+from services.aws_codebuild import AWSCodeBuild
 
 class DeployService:
     def __init__(self, deploy_repository: DeployRepository, aws_user_service: AWSUserService, git_repository_service: GitRepositoryService):
@@ -24,6 +25,7 @@ class DeployService:
         self.git_repository_service = git_repository_service
         self.base_pipeline_path = "app/Pipelines/"
         self.project_root = Path(__file__).resolve().parent.parent.parent
+        self.codebuild_service = AWSCodeBuild()
         self.framework_config = self._load_framework_config()
         self.supported_frameworks = self._get_supported_frameworks()
     def _validate_path(self, path: str) -> bool:
@@ -204,32 +206,90 @@ class DeployService:
 
         # Initialize Terraform
         try:
-            tf = Terraform(working_dir=os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster"))
-
-            vars = {
+            tf_vars = {
                 "user_github_id": deploy_data["user_github_id"],
                 "aws_access_key": aws_user.aws_access_key_id,
                 "aws_secret_access_key": aws_user.aws_secret_access_key,
-                "repo_name": "my-app",
+                "repo_name": deploy.repo_name,
+                "owner": deploy.owner,
                 "ecs_task_container_port": deploy_data["port"],
-                "ecs_task_host_port": deploy_data["port"]
+                "ecs_task_host_port": deploy_data["port"],
+                "aws_region": os.environ.get('AWS_DEFAULT_REGION'),
+                "source_branch": getattr(deploy, 'branch_name', 'main')
             }
-            subprocess.run(["sh", "setup_backend.sh", deploy_data["user_github_id"]], cwd=os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster"), capture_output=True, text=True)
-            # apply the terraform 
+            # Filter out None values from tf_vars to prevent issues with Terraform
+            tf_vars = {k: v for k, v in tf_vars.items() if v is not None}
+
+            tf_working_dir = os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster")
+            tf = Terraform(working_dir=tf_working_dir)
+            
+            # Run setup_backend.sh if it exists - ensure it has execute permissions
+            setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
+            if os.path.exists(setup_script_path):
+                # Ensure execute permission
+                os.chmod(setup_script_path, 0o755)
+                subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], cwd=tf_working_dir, capture_output=True, text=True, check=True)
+
             print("Applying Terraform...")
-            return_code, stdout, stderr = tf.apply(skip_plan=True, var=vars, capture_output=False, auto_approve=True)
+            return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
             if return_code != 0:
-                raise HTTPException(status_code=500, detail="Failed to apply Terraform configuration")
-            print("Getting output...")
+                print(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
+                raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
+            
+            print("Getting Terraform output...")
             output = tf.output(json=True)
-            print(output)
-            if not output or "load_balancer_dns" not in output:
-                raise ValueError("Invalid Terraform output format or missing load_balancer_dns output")
-            dns_load_balancer = output["load_balancer_dns"]["value"]
+            if not output:
+                raise ValueError("Terraform output is empty")
+
+            dns_load_balancer = output.get("load_balancer_dns", {}).get("value")
+            ecr_repo_url = output.get("ecr_repo_url", {}).get("value")
+
+            if not dns_load_balancer or not ecr_repo_url:
+                missing_outputs = []
+                if not dns_load_balancer: missing_outputs.append("load_balancer_dns")
+                if not ecr_repo_url: missing_outputs.append("ecr_repo_url")
+                raise ValueError(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}. Full output: {output}")
+
+        except subprocess.CalledProcessError as e:
+            raise ValueError(f"Error running setup_backend.sh: {e.stderr}")
         except Exception as e:
             raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
         
         deploy_data["load_balancer_url"] = dns_load_balancer
+        deploy_data["ecr_repo_url"] = ecr_repo_url
+
+        # Start CodeBuild process
+        try:
+            codebuild_project_name = f"{user.github_id}-{deploy.repo_name}-codebuild"
+            source_branch_for_codebuild = getattr(deploy, 'branch_name', 'main')
+
+            # Read buildspec content
+            buildspec_file_path = os.path.join(deploy_data["absolute_path"], "buildspec.yml") # Assuming buildspec.yml is copied here
+            buildspec_content = ""
+            if os.path.exists(buildspec_file_path):
+                with open(buildspec_file_path, "r") as f:
+                    buildspec_content = f.read()
+            else:
+                print(f"Warning: buildspec.yml not found at {buildspec_file_path}. CodeBuild might use project default.")
+
+            print(f"Starting CodeBuild project:  for E{codebuild_project_name}CR repo: {ecr_repo_url} on branch {source_branch_for_codebuild}")
+            build_response = self.codebuild_service.start_build(
+                project_name=codebuild_project_name,
+                ecr_repo_url=ecr_repo_url,
+                source_version=source_branch_for_codebuild,
+                buildspec_content=buildspec_content,
+                port=deploy_data["port"],
+                entry_point=deploy_data["entry_point"]
+            )
+            print(f"CodeBuild started: {build_response}")
+            deploy_data["codebuild_build_id"] = build_response.get('build', {}).get('id')
+
+        except Exception as e:
+            print(f"Error starting CodeBuild build: {str(e)}")
+            # Depending on requirements, you might want to raise an error or handle it differently
+            # For now, just printing the error and an empty build ID will be stored.
+            deploy_data["codebuild_build_id"] = None
+
         print(deploy_data)
         # Create a new DeployCreateSchema from the deploy data
         

@@ -2,6 +2,18 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID"
+}
+variable "public_subnet_id" {
+  type        = string
+  description = "Public Subnet ID"
+}
+variable "private_subnet_id" {
+  type        = string
+  description = "Private Subnet ID"
+}
 variable "user_github_id" {
   type        = string
   description = "GitHub ID of the user"
@@ -98,10 +110,21 @@ variable "availability_zones" {
 }
 
 variable "repo_name" {
-  description = "Name of the ECR repository"
+  description = "Repository name"
   type        = string
-  
 }
+
+variable "owner" {
+  description = "GitHub repository owner"
+  type        = string
+}
+
+variable "source_branch" {
+  description = "Source branch for the CodeBuild project (e.g., main, master)"
+  type        = string
+  default     = "main"
+}
+
 variable "ecs_task_family" {
   description = "Family name for the ECS task definition"
   type        = string
@@ -139,9 +162,13 @@ variable "ecs_task_protocol" {
 }
 locals {
   aws_region = var.aws_region
+  vpc_id = var.vpc_id
+  public_subnet_id = var.public_subnet_id
+  private_subnet_id = var.private_subnet_id
   user_github_id = var.user_github_id
   aws_access_key = var.aws_access_key
   aws_secret_access_key = var.aws_secret_access_key
+
   
   public_key_path = var.public_key_path
   private_key_path = var.private_key_path

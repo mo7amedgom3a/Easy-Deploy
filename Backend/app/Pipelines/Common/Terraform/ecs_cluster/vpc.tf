@@ -1,113 +1,174 @@
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+# ------------------------------------------
+# Data Sources
+# ------------------------------------------
+# data "aws_vpc" "main" {
+#   tags = {
+#     Name = "main"
+#   }
+# }
 
-  tags = {
-    Name = "main-${var.user_github_id}-vpc"
-  }
-}
+# # Subnet data sources
+# data "aws_subnets" "private" {
+#   filter {
+#     name   = "vpc-id"
+#     values = [data.aws_vpc.main.id]
+#   }
+
+#   filter {
+#     name   = "tag:Name" 
+#     values = ["*private*"]
+#   }
+# }
+
+# data "aws_subnets" "public" {
+#   filter {
+#     name   = "vpc-id"
+#     values = [data.aws_vpc.main.id]
+#   }
+
+#   filter {
+#     name   = "tag:Name"
+#     values = ["*public*"]
+#   }
+# }
+
+# data "aws_subnet" "private" {
+#   for_each = toset(data.aws_subnets.private.ids)
+#   id       = each.value
+# }
+
+# data "aws_subnet" "public" {
+#   for_each = toset(data.aws_subnets.public.ids)
+#   id       = each.value
+# }
+
+# locals {
+#   private_subnet_ids = [for subnet in data.aws_subnet.private : subnet.id]
+#   public_subnet_ids  = [for subnet in data.aws_subnet.public : subnet.id]
+# }
 
 # ------------------------------------------
-# Internet Gateway
+# VPC Resources
 # ------------------------------------------
-resource "aws_internet_gateway" "internet_gateway" {
-  vpc_id = aws_vpc.main.id
-  
-  tags = {
-    Name = "${var.user_github_id}-igw"
-  }
-}
+# resource "aws_vpc" "shared" {
+#   cidr_block           = "10.0.0.0/16"
+#   enable_dns_hostnames = true
+#   enable_dns_support   = true
 
-# ------------------------------------------
-# Public Subnet and Routing
-# ------------------------------------------
-resource "aws_subnet" "public_subnet" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(aws_vpc.main.cidr_block, 8, 1)
-  map_public_ip_on_launch = true
-  availability_zone       = "us-east-1a"
-  
-  tags = {
-    Name = "${var.user_github_id}-public-subnet"
-  }
-}
-
-resource "aws_route_table" "public_route_table" {
-  vpc_id = aws_vpc.main.id
-  
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.internet_gateway.id
-  }
-  
-  tags = {
-    Name = "${var.user_github_id}-public-route-table"
-  }
-}
-
-resource "aws_route_table_association" "public_route_association" {
-  subnet_id      = aws_subnet.public_subnet.id
-  route_table_id = aws_route_table.public_route_table.id
-}
+#   tags = {
+#     Name = "Easy-Deploy-Shared-VPC"
+#   }
+# }
 
 # ------------------------------------------
-# Private Subnet and Routing
+# Internet Gateway Resources
 # ------------------------------------------
-resource "aws_subnet" "private_subnet1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(aws_vpc.main.cidr_block, 8, 2)
-  availability_zone = "us-east-1a"
+# resource "aws_internet_gateway" "internet_gateway" {
+#   vpc_id = data.aws_vpc.main.id
   
-  tags = {
-    Name = "${var.user_github_id}-private-subnet"
-  }
-}
+#   tags = {
+#     Name = "Easy-Deploy-IGW"
+#   }
+# }
 
-# NAT Gateway for private subnet internet access
-resource "aws_eip" "nat_eip" {
-  vpc = true
+# resource "aws_internet_gateway" "shared" {
+#   vpc_id = data.aws_vpc.main.id
   
-  tags = {
-    Name = "${var.user_github_id}-nat-eip"
-  }
-}
-resource "aws_nat_gateway" "nat_gateway" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_subnet.id
-  depends_on    = [aws_internet_gateway.internet_gateway]
-  
-  tags = {
-    Name = "${var.user_github_id}-nat-gateway"
-  }
-}
-
-resource "aws_route_table" "private_route_table" {
-  vpc_id = aws_vpc.main.id
-  
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_gateway.id
-  }
-  
-  tags = {
-    Name = "${var.user_github_id}-private-route-table"
-  }
-}
-
-resource "aws_route_table_association" "private_route_association" {
-  subnet_id      = aws_subnet.private_subnet1.id
-  route_table_id = aws_route_table.private_route_table.id
-}
+#   tags = {
+#     Name = "Easy-Deploy-Shared-IGW"
+#   }
+# }
 
 # ------------------------------------------
-# Security Group
+# Subnet Resources
+# ------------------------------------------
+# resource "aws_subnet" "public_subnet" {
+#   vpc_id                  = data.aws_vpc.main.id
+#   cidr_block              = cidrsubnet(data.aws_vpc.main.cidr_block, 8, 1)
+#   map_public_ip_on_launch = true
+#   availability_zone       = "us-east-1a"
+  
+#   tags = {
+#     Name = "Easy-Deploy-Public-Subnet"
+#   }
+# }
+
+# resource "aws_subnet" "private_subnet1" {
+#   vpc_id            = data.aws_vpc.main.id
+#   cidr_block        = cidrsubnet(data.aws_vpc.main.cidr_block, 8, 2)
+#   availability_zone = "us-east-1a"
+  
+#   tags = {
+#     Name = "Easy-Deploy-Private-Subnet"
+#   }
+# }
+
+# # ------------------------------------------
+# # Route Table Resources
+# # ------------------------------------------
+# resource "aws_route_table" "public_route_table" {
+#   vpc_id = data.aws_vpc.main.id
+  
+#   route {
+#     cidr_block = "0.0.0.0/0"
+#     gateway_id = aws_internet_gateway.internet_gateway.id
+#   }
+  
+#   tags = {
+#     Name = "Easy-Deploy-Public-Route-Table"
+#   }
+# }
+
+# resource "aws_route_table" "private_route_table" {
+#   vpc_id = data.aws_vpc.main.id
+  
+#   tags = {
+#     Name = "Easy-Deploy-Private-Route-Table"
+#   }
+# }
+
+# resource "aws_route_table_association" "public_route_association" {
+#   subnet_id      = aws_subnet.public_subnet.id
+#   route_table_id = aws_route_table.public_route_table.id
+# }
+
+# resource "aws_route_table_association" "private_route_association" {
+#   subnet_id      = aws_subnet.private_subnet1.id
+#   route_table_id = aws_route_table.private_route_table.id
+# }
+# load balancer
+resource "aws_lb" "load_balancer" {
+  name               = "${var.user_github_id}-${var.repo_name}-lb"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = [var.public_subnet_id]
+
+  tags = {
+    Name = "${var.user_github_id}-${var.repo_name}-lb"
+  }
+}
+
+resource "aws_lb_listener" "ecs_nlb_listener" {
+  load_balancer_arn = aws_lb.load_balancer.arn
+  port              = 80
+  protocol          = "TCP"
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ecs_tg.arn
+  }
+}
+
+
+
+
+# ------------------------------------------
+# Security Group Resources
 # ------------------------------------------
 resource "aws_security_group" "security_group" {
-  name   = var.aws_security_group_name
-  vpc_id = aws_vpc.main.id
+  name        = "${var.user_github_id}-${var.repo_name}-sg"
+  description = "Main security group for ECS deployment"
+  vpc_id      = var.vpc_id
 
-  # Allow SSH access
   ingress {
     from_port   = 22
     to_port     = 22
@@ -116,7 +177,6 @@ resource "aws_security_group" "security_group" {
     description = "Allow SSH access"
   }
   
-  # Allow HTTP traffic and container port access
   ingress {
     from_port   = 80
     to_port     = var.ecs_task_container_port
@@ -125,7 +185,6 @@ resource "aws_security_group" "security_group" {
     description = "Allow HTTP and container traffic"
   }
 
-  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -135,16 +194,15 @@ resource "aws_security_group" "security_group" {
   }
   
   tags = {
-    Name = "${var.user_github_id}-sg"
+    Name = "${var.user_github_id}-${var.repo_name}-sg"
   }
 }
 
-# Security group for EC2 Instance Connect endpoint
 resource "aws_security_group" "eic_endpoint_sg" {
-  name   = "eic-endpoint-sg"
-  vpc_id = aws_vpc.main.id
+  name        = "${var.user_github_id}-${var.repo_name}-eic-endpoint-sg"
+  description = "Security group for EC2 Instance Connect endpoint"
+  vpc_id      = var.vpc_id
 
-  # Allow inbound traffic from anywhere
   ingress {
     from_port   = 443
     to_port     = 443
@@ -153,7 +211,6 @@ resource "aws_security_group" "eic_endpoint_sg" {
     description = "Allow inbound traffic from anywhere"
   }
 
-  # Allow all outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -161,7 +218,10 @@ resource "aws_security_group" "eic_endpoint_sg" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow all outbound traffic"
   }
+
   tags = {
-    Name = "${var.user_github_id}-eic-endpoint-sg"
+    Name = "${var.user_github_id}-${var.repo_name}-eic-endpoint-sg"
   }
 }
+
+
