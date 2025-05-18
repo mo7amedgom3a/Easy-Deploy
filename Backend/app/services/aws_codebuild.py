@@ -22,7 +22,7 @@ class AWSCodeBuild:
             },
             {
                 'name': 'PORT',
-                'value': port
+                'value': str(port)
             },
             {
                 'name': 'ENTRY_POINT',
