@@ -18,9 +18,8 @@ variable "user_github_id" {
   type        = string
   description = "GitHub ID of the user"
 }
-variable "public_key_path" {
-  description = "Path to your public SSH key"
-  default     = "~/.ssh/id_rsa.pub"
+variable "public_key" {
+  description = "Content of your public SSH key"
   type        = string
 }
 
@@ -170,7 +169,7 @@ locals {
   aws_secret_access_key = var.aws_secret_access_key
 
   
-  public_key_path = var.public_key_path
+  public_key = var.public_key
   private_key_path = var.private_key_path
   
   aws_ecs_cluster_name = "${var.aws_ecs_cluster_name}-${var.user_github_id}"

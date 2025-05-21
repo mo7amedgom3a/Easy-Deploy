@@ -4,7 +4,7 @@ data "aws_ssm_parameter" "ecs_ami" {
 
 resource "aws_key_pair" "deployer_key" {
   key_name   = "deployer-key-${var.user_github_id}"
-  public_key = file(var.public_key_path)
+  public_key = var.public_key
 }
 
 resource "aws_launch_template" "ecs_lt" {

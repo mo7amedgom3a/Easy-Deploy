@@ -7,6 +7,7 @@ ARG CLIENT_ID
 ARG CLIENT_SECRET
 ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
+ARG PUPLIC_KEY_ID
 ARG CONNECTION_STRING
 ARG DATABASE_NAME
 ARG JWT_ALGORITHM
@@ -21,6 +22,7 @@ ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 ENV CONNECTION_STRING=${CONNECTION_STRING}
 ENV DATABASE_NAME=${DATABASE_NAME}
 ENV JWT_ALGORITHM=${JWT_ALGORITHM}
+ENV PUPLIC_KEY_ID=${PUPLIC_KEY_ID}
 ENV JWT_SECRET_KEY=${JWT_SECRET_KEY}
 ENV EXPIRATION_TIME=${EXPIRATION_TIME}
 
@@ -28,6 +30,7 @@ COPY requirements.txt .
 
 # Install system 
 RUN pip3 install --no-cache-dir -r requirements.txt
+
 # Install Git and other required packages
 RUN apt-get update && \
     apt-get install -y git gnupg software-properties-common curl && \
