@@ -23,5 +23,11 @@ class DeployRepository:
         else:
             raise Exception("Failed to create deploy record")
         
-
+    async def get_deploy(self, repo_name: str, owner: str) -> Deploy:
+        """
+        Get a deploy record from the database.
+        """
+        collection = await self.db.get_collection(self.collection)
+        deploy = await collection.find_one({"repo_name": repo_name, "owner": owner})
+        return Deploy(**deploy)
     

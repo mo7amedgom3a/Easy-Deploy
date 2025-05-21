@@ -26,3 +26,9 @@ output "private_subnet_id" {
   value = aws_subnet.private_subnet_shared.id
 }
 
+# EC2 instance IDs that can be accessed via SSH
+output "ecs_instance_ids" {
+  value = aws_autoscaling_group.ecs_asg.id
+  description = "The IDs of the EC2 instances in the ECS Auto Scaling Group that can be accessed via SSH"
+}
+

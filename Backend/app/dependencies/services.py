@@ -10,8 +10,10 @@ from dependencies.user import get_user
 from dependencies.git_repository import get_git_repository
 from dependencies.aws_user import get_aws_user_repository
 from dependencies.deploy import get_deploy_repository
+
 from dependencies.user import get_user
 from repositories.user import User
+from services.aws_codebuild import AWSCodeBuild
 
 async def get_user_service(user_repository: User = Depends(get_user)) -> UserService:
     return UserService(user_repository)
@@ -35,3 +37,9 @@ async def get_deploy_service(
     git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
 ) -> DeployService:
     return DeployService(deploy_repository, aws_user_service, git_repository_service)
+
+
+async def get_aws_codebuild(
+    
+) -> AWSCodeBuild:
+    return AWSCodeBuild()

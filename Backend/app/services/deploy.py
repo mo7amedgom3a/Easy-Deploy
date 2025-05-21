@@ -88,6 +88,14 @@ class DeployService:
             raise ValueError("Invalid user ID")
         return await self.aws_user_service.get_user_by_id(user_id)
 
+    async def get_deploy(self, repo_name: str, owner: str) -> Deploy:
+        """Fetch a deployment record from the repository."""
+        if not repo_name or not isinstance(repo_name, str):
+            raise ValueError("Invalid repo name")
+        if not owner or not isinstance(owner, str):
+            raise ValueError("Invalid owner")
+        return await self.deploy_repository.get_deploy(repo_name, owner)
+    
     async def create_deploy(self, deploy: DeployCreateSchema, access_token: str, user: UserSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
         

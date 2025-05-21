@@ -1,35 +1,121 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from services.git_repository import GitRepositoryService
+from services.deploy import DeployService
+from services.aws_codebuild import AWSCodeBuild
 from dependencies.security import get_current_user, get_access_key_from_token_payload
 from schemas.repository import RepositorySchema
+from models.deploy import Deploy
+from schemas.deploy_schema import DeploySchema
 from typing import Optional, List
 from schemas.user_schema import UserSchema
-from dependencies.services import get_git_repository_service
+from dependencies.services import get_git_repository_service, get_deploy_service, get_aws_codebuild
 from fastapi.security import OAuth2PasswordBearer
+import logging
+import os
 
 outh_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(prefix="/git", tags=["git"])
 
-
-@router.post("/repository/github-webhook")  
-async def github_webhook(
-    request: Request
+logger = logging.getLogger(__name__)
+# trigger github webhook for user 
+@router.post("/repository/{owner}/{repo_name}/webhook", response_model=None)
+async def create_webhook(
+    owner: str,
+    repo_name: str,
+    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
+    token: str = Depends(outh_2_scheme)
 ):
-    """ trigger github webhook for user repository """
-    
+    """
+    Creates a webhook for a specific repository.
+    """
     try:
-        payload = await request.json()
-        
-        if payload.get("ref"):
-            owner = payload["repository"]["owner"]["login"]
-            repo_name = payload["repository"]["name"]
-            # Use direct authentication or a configured service token instead of user token
-            
+        # Get the access key from the token payload
+        access_key = await get_access_key_from_token_payload(token)
+        result = await git_repository_service.create_github_webhook(owner=owner, repo_name=repo_name, access_token=access_key)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    return {"message": "Webhook received successfully "}
+    
+@router.post("/repository/webhook/")  
+async def github_webhook(
+    request: Request,
+    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
+    deploy_service: DeployService = Depends(get_deploy_service),
+    aws_codebuild: AWSCodeBuild = Depends(get_aws_codebuild)
+):
+    """Handle GitHub webhook events for repository updates"""
+    try:
+        payload = await request.json()
+        
+        # Verify this is a push event
+        if payload.get("ref") and payload.get("repository"):
+            owner = payload["repository"]["owner"]["login"]
+            repo_name = payload["repository"]["name"]
+            
+            # Pull the latest changes
+            result = await git_repository_service.pull_repository(
+                owner=owner,
+                repo_name=repo_name,
+                access_token=None  # No token needed for webhook operations
+            )
+            
+            if "error" in result:
+                logger.error(f"Failed to pull repository: {result['error']}")
+                return {"status": "error", "message": result["error"]}
+            
+            # Get deploy data
+            deploy = await deploy_service.get_deploy(repo_name, owner)
+            if deploy:
+                # Start CodeBuild process
+                codebuild_project_name = f"{deploy.user_github_id}-{deploy.repo_name}-codebuild"
+                source_branch_for_codebuild = getattr(deploy, 'branch', 'main')
+
+                # Read buildspec content
+                if not deploy.absolute_path:
+                    raise HTTPException(status_code=400, detail="Repository path is required")
+                buildspec_file_path = os.path.join(deploy.absolute_path, "buildspec.yml")
+                buildspec_content = ""
+                if os.path.exists(buildspec_file_path):
+                    with open(buildspec_file_path, "r") as f:
+                        buildspec_content = f.read()
+                else:
+                    logger.warning(f"buildspec.yml not found at {buildspec_file_path}. CodeBuild might use project default.")
+
+                # Validate required deploy parameters
+                if not deploy.ecr_repo_url:
+                    raise HTTPException(status_code=400, detail="ECR repository URL is required")
+                if not deploy.port:
+                    raise HTTPException(status_code=400, detail="Port is required")
+                if not deploy.app_entry_point:
+                    raise HTTPException(status_code=400, detail="App entry point is required")
+
+                logger.info(f"Starting CodeBuild project: {codebuild_project_name} for ECR repo: {deploy.ecr_repo_url} on branch {source_branch_for_codebuild}")
+                build_response = aws_codebuild.start_build(
+                    project_name=codebuild_project_name,
+                    ecr_repo_url=deploy.ecr_repo_url,
+                    source_version=source_branch_for_codebuild,
+                    buildspec_content=buildspec_content,
+                    port=deploy.port,
+                    entry_point=deploy.app_entry_point
+                )
+                print(f"CodeBuild started: {build_response}")
+
+            return {
+                "status": "success",
+                "message": "Repository updated successfully",
+                "details": result
+            }
+        else:
+            return {"status": "ignored", "message": "Not a push event"}
+            
+    except Exception as e:
+        logger.error(f"Webhook processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
         
 @router.get("/repository/{owner}", response_model=List[RepositorySchema], dependencies=[Depends(get_current_user)])
 async def get_repositories(
@@ -44,9 +130,13 @@ async def get_repositories(
         # Get the access key from the token payload
         access_key = await get_access_key_from_token_payload(token)
         repositories = await git_repository_service.fetch_user_repositories(owner=owner, access_token=access_key)
-        if "error" in repositories:
-            raise HTTPException(status_code=400, detail=repositories["error"])
-        return repositories
+        
+        # Check if the response is an error dictionary
+        if isinstance(repositories, dict) and "error" in repositories:
+            raise HTTPException(status_code=400, detail=repositories.get("error", "Unknown error"))
+            
+        # Convert list of dicts to list of RepositorySchema
+        return [RepositorySchema(**repo) for repo in repositories]
 
     except HTTPException as http_ex:
         raise http_ex
@@ -127,30 +217,7 @@ async def get_latest_commit(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-# trigger github webhook for user 
-@router.post("/repository/{owner}/{repo_name}/webhook", response_model=None)
-async def create_webhook(
-    owner: str,
-    repo_name: str,
-    git_repository_service: GitRepositoryService = Depends(get_git_repository_service),
-    token: str = Depends(outh_2_scheme)
-):
-    """
-    Creates a webhook for a specific repository.
-    """
-    try:
-        # Get the access key from the token payload
-        access_key = await get_access_key_from_token_payload(token)
-        result = await git_repository_service.create_github_webhook(owner=owner, repo_name=repo_name, access_token=access_key)
-        if "error" in result:
-            raise HTTPException(status_code=400, detail=result["error"])
-        return result
 
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
 
 # get tree structure with sha
 @router.get("/repository/{owner}/{repo_name}/blobs/{branch}/{sha}", response_model=None, dependencies=[Depends(get_current_user)])
@@ -168,9 +235,11 @@ async def get_blob_tree(
     try:
         # Get the access key from the token payload
         access_key = await get_access_key_from_token_payload(token)
+        if sha is None:
+            raise HTTPException(status_code=400, detail="SHA parameter is required")
         blob_tree = await git_repository_service.get_blob_tree(owner=owner, repo_name=repo_name, branch=branch, sha=sha, access_token=access_key)
-        if "error" in blob_tree:
-            raise HTTPException(status_code=400, detail=blob_tree["error"])
+        if isinstance(blob_tree, dict) and "error" in blob_tree:
+            raise HTTPException(status_code=400, detail=blob_tree.get("error", "Unknown error"))
         return blob_tree
 
     except HTTPException as http_ex:

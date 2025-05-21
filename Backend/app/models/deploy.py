@@ -9,8 +9,9 @@ class Deploy(BaseModel):
     branch: str
     pipeline_path: Optional[str] = None  # path to the pipeline file
     framework: Optional[str] = None  # e.g., "flask", "django", etc.
-    root_folder_path: str
-    absolute_path: Optional[str] = None  
+    root_folder_path: Optional[str] = None
+    ecr_repo_url: Optional[str] = None
+    absolute_path: Optional[str] = None  # absolute path to the repository on the server
     build_command: Optional[str] = None  
     run_command: Optional[str] = None 
     load_balancer_url: Optional[str] = None

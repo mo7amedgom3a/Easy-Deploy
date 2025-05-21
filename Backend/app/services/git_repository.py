@@ -1,6 +1,6 @@
 import os
 import subprocess
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 import logging
 
 import httpx
@@ -18,9 +18,9 @@ class GitRepositoryService:
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
         # EFS volume mount point in Docker container
-        self.dir_base = "/tmp/mnt/repos"
+        self.dir_base = "/mnt/repos" # change in production 
         self.base_url = "https://api.github.com"
-        self.webhook_url = "https://kp6tjc7t-8000.uks1.devtunnels.ms//git/repository/github-webhook"
+        self.webhook_url = "https://monkfish-feasible-heavily.ngrok-free.app/git/repository/webhook/"
         
         # Ensure the base directory exists and has proper permissions
         self._ensure_base_directory()
@@ -90,14 +90,17 @@ class GitRepositoryService:
 
     # === Repository Information Methods ===
     
-    async def fetch_user_repositories(self, owner: str, access_token: str) -> List[dict]:
+    async def fetch_user_repositories(self, owner: str, access_token: str) -> List[Dict[str, Any]]:
         """Fetch repositories for a given user."""
         params = {"per_page": 10, "sort": "created", "direction": "desc"}
-        return await self._make_github_request(
+        response = await self._make_github_request(
             "get", f"/users/{owner}/repos", access_token, params=params
         )
+        if isinstance(response, list):
+            return response
+        return []
 
-    async def fetch_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
+    async def fetch_repository(self, owner: str, repo_name: str, access_token: str) -> Dict[str, Any]:
         """Fetch repository details with additional information."""
         repo_data = await self._make_github_request(
             "get", f"/repos/{owner}/{repo_name}", access_token
@@ -108,20 +111,21 @@ class GitRepositoryService:
             
         try:
             repo = RepositorySchema(**repo_data)
-            latest_commit = await self.get_latest_commit(owner, repo.name, repo.default_branch, access_token)
-            
-            if "error" not in latest_commit:
-                repo.blob_sha = latest_commit.get("sha")
+            if repo.name and repo.default_branch:
+                latest_commit = await self.get_latest_commit(owner, repo.name, repo.default_branch, access_token)
                 
-            languages = await self.get_language(owner, repo.name, access_token)
-            if isinstance(languages, list):
-                repo.languages = languages
-                
+                if "error" not in latest_commit:
+                    repo.blob_sha = latest_commit.get("sha")
+                    
+                languages = await self.get_language(owner, repo.name, access_token)
+                if isinstance(languages, list):
+                    repo.languages = languages
+                    
             return repo.dict()
         except Exception as e:
             return {"error": f"Failed to process repository data: {str(e)}"}
 
-    async def get_language(self, owner: str, repo_name: str, access_token: str) -> List[str]:
+    async def get_language(self, owner: str, repo_name: str, access_token: str) -> Union[List[str], Dict[str, Any]]:
         """Get programming languages used in the repository."""
         languages = await self._make_github_request(
             "get", f"/repos/{owner}/{repo_name}/languages", access_token
@@ -131,19 +135,22 @@ class GitRepositoryService:
             return languages
         return list(languages.keys())
 
-    async def get_latest_commit(self, owner: str, repo_name: str, branch: str, access_token: str) -> dict:
+    async def get_latest_commit(self, owner: str, repo_name: str, branch: str, access_token: str) -> Dict[str, Any]:
         """Get the latest commit for a repository branch."""
         return await self._make_github_request(
             "get", f"/repos/{owner}/{repo_name}/commits/{branch}", access_token
         )
 
-    async def get_blob_tree(self, owner: str, repo_name: str, branch: str, access_token: str, sha: str = "") -> dict:
+    async def get_blob_tree(self, owner: str, repo_name: str, branch: str, access_token: str, sha: str = "") -> Union[List[Dict[str, Any]], Dict[str, Any]]:
         """Get the directory tree for a repository."""
         if not sha:
             commits = await self.get_latest_commit(owner, repo_name, branch, access_token)
             if "error" in commits:
                 return commits
-            sha = commits.get("sha")
+            commit_sha = commits.get("sha")
+            if not commit_sha:
+                return {"error": "No SHA found in commit data"}
+            sha = commit_sha
             
         tree_data = await self._make_github_request(
             "get", f"/repos/{owner}/{repo_name}/git/trees/{sha}", access_token
@@ -154,14 +161,11 @@ class GitRepositoryService:
             
         return [item for item in tree_data.get("tree", []) if item.get("type") == "tree"]
 
-        pass
-
     # === Webhook Management ===
     
-    async def create_github_webhook(self, owner: str, repo_name: str, access_token: str) -> dict:
-        
+    async def create_github_webhook(self, owner: str, repo_name: str, access_token: str) -> Dict[str, Any]:
         """Create a webhook for a repository."""
-        print("access_token", access_token)
+       
         webhook_data = {
             "config": {
                 "url": self.webhook_url,
@@ -170,17 +174,16 @@ class GitRepositoryService:
             },
             "events": ["push"]
         }
-        
         return await self._make_github_request(
             "post", f"/repos/{owner}/{repo_name}/hooks", access_token, json_data=webhook_data
         )
 
     # === Local Repository Management ===
     
-    async def save_repo(self, owner: str, repo: dict) -> dict:
+    async def save_repo(self, owner: str, repo: Dict[str, Any]) -> Dict[str, Any]:
         """Save repository to database."""
         try:
-            repo_data = RepositorySchema(owner=owner, **repo)
+            repo_data = RepositorySchema(**repo)
             await self.git_repository.save_repo(owner, repo_data.dict())
             return repo_data.dict()
         except Exception as e:
@@ -250,7 +253,7 @@ class GitRepositoryService:
             logger.error(error_msg)
             return {"error": error_msg}
 
-    async def pull_repository(self, owner: str, repo_name: str, access_token: str) -> dict:
+    async def pull_repository(self, owner: str, repo_name: str, access_token: Optional[str] = None) -> Dict[str, Any]:
         """Pull the latest changes for a cloned repository."""
         clone_dir = f"{self.dir_base}/{owner}/{repo_name}"
         
@@ -263,6 +266,27 @@ class GitRepositoryService:
             original_dir = os.getcwd()
             os.chdir(clone_dir)
             
+            # If access_token is provided, configure git credentials
+            if access_token:
+                subprocess.run(
+                    ["git", "config", "credential.helper", "store"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                subprocess.run(
+                    ["git", "config", "credential.https://github.com.username", "x-access-token"],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+                subprocess.run(
+                    ["git", "config", "credential.https://github.com.password", access_token],
+                    check=True,
+                    capture_output=True,
+                    text=True
+                )
+            
             result = subprocess.run(
                 ["git", "pull"],
                 check=True,
@@ -272,7 +296,7 @@ class GitRepositoryService:
             
             os.chdir(original_dir)
             logger.info(f"Successfully pulled repository at {clone_dir}")
-            return {"message": "Repository pulled successfully"}
+            return {"message": "Repository pulled successfully", "output": result.stdout}
             
         except subprocess.CalledProcessError as e:
             error_msg = f"Pull failed: {e.stderr}"
