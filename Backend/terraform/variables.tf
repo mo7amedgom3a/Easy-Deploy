@@ -115,3 +115,9 @@ variable "ecs_task_protocol" {
   type        = string
   default     = "tcp"
 }
+
+variable "image_tag" {
+  description = "The tag of the Docker image to deploy"
+  type        = string
+  default     = "latest"
+}

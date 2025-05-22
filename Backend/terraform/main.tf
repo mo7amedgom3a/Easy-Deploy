@@ -190,7 +190,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   network_mode       = var.ecs_task_network_mode
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  cpu                = 256
+  cpu                = 512 
+  memory             = 1024
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -198,9 +199,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   container_definitions = jsonencode([
     {
       name      = var.aws_ecs_task_container_name
-      image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
-      cpu       = 256
-      memory    = 512
+      image     = "${aws_ecr_repository.app_repo.repository_url}:${var.image_tag}"
+      cpu       = 512
+      memory    = 1024
       network_mode = "awsvpc"
       essential = true
       portMappings = [
@@ -208,24 +209,27 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           containerPort = var.aws_ecs_task_container_port
           hostPort      = var.aws_ecs_task_host_port
           protocol      = "tcp"
-          
         }
       ]
-        mountPoints = [
+      mountPoints = [
         {
           sourceVolume  = "efs-repo-volume"
           containerPath = "/mnt/repos"
           readOnly      = false
         }
       ]
+     
     }
   ])
-      volume {
-        name = "efs-repo-volume"
-        efs_volume_configuration {
-          file_system_id          = aws_efs_file_system.repo_storage.id
-          transit_encryption      = "ENABLED"
-          root_directory          = "/"
+  volume {
+    name = "efs-repo-volume"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.repo_storage.id
+      transit_encryption      = "ENABLED"
+      root_directory          = "/"
+      authorization_config {
+        iam = "ENABLED"
+      }
     }
   }
 }
@@ -235,12 +239,21 @@ resource "aws_ecs_service" "ecs_service" {
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   desired_count   = 2
+  
   network_configuration {
     subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
     security_groups = [aws_security_group.ecs_tasks_sg.id]   
   }
   
-  force_new_deployment = true
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
+  deployment_controller {
+    type = "ECS"
+  }
+
   placement_constraints {
     type = "distinctInstance"
   }

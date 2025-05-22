@@ -14,6 +14,10 @@ output "ecr_repo_url" {
 output "load_balancer_dns" {
   value = aws_lb.ecs_alb.dns_name
 }
+# efs id
+output "efs_id" {
+  value = aws_efs_file_system.repo_storage.id
+}
 
 
 # shared puplic subnet
