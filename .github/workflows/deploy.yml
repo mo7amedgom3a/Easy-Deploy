@@ -20,7 +20,7 @@ jobs:
       JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       EXPIRATION_TIME: ${{ secrets.EXPIRATION_TIME }}
-      PUPLIC_KEY_ID: ${{ secrets.PUPLIC_KEY_ID }}
+     
       IMAGE_TAG: latest
 
     steps:
@@ -56,10 +56,3 @@ jobs:
           -t easy-deploy-backend Backend/app
         docker tag easy-deploy-backend:latest $ECR_REPO_URL:$IMAGE_TAG
         docker push $ECR_REPO_URL:$IMAGE_TAG
-    # allow ecs to force pull latest image
-    - name: Update ECS Service
-      run: |
-        aws ecs update-service \
-          --cluster ecs-cluster \
-          --service ecs-service \
-          --force-new-deployment 

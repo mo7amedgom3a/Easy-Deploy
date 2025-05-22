@@ -44,3 +44,18 @@ def get_frameworks(
         return deploy_service.get_framework_config()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{owner}/{repo_name}")
+async def delete_deploy(
+    owner: str,
+    repo_name: str,
+    deploy_service: DeployService = Depends(get_deploy_service)
+) -> Dict:
+    """
+    destroy terraform resources for repo
+    """
+    try:
+        return await deploy_service.destroy_terraform_resources(owner, repo_name)
+    except HTTPException as http_ex:
+        raise http_ex

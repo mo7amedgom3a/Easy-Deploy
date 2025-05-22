@@ -66,7 +66,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
 resource "aws_lb" "ecs_alb" {
   name               = var.aws_lb_name
   internal           = false
-
+  idle_timeout       = 3600
   
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]

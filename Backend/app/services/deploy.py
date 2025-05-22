@@ -96,6 +96,22 @@ class DeployService:
             raise ValueError("Invalid owner")
         return await self.deploy_repository.get_deploy(repo_name, owner)
     
+    async def destroy_terraform_resources(self, owner: str, repo_name: str) -> Dict[str, str]:
+        """Destroy Terraform resources for a given repository."""
+        try:
+            # Get the deploy record
+            deploy = await self.get_deploy(repo_name, owner)
+            if not deploy or not deploy.absolute_path:
+                raise ValueError("Deploy record not found or missing absolute path")
+            # get the absolute path of the deploy
+            tf_working_dir = os.path.join(str(deploy.absolute_path), "terraform", "ecs_cluster")
+            tf = Terraform(working_dir=tf_working_dir)
+            tf.destroy(auto_approve=True, var={'github_owner': deploy.owner})
+            return {"status": "success", "message": "Resources destroyed successfully"}
+        except Exception as e:
+            raise ValueError(f"Error destroying Terraform resources: {str(e)}")
+        
+        
     async def create_deploy(self, deploy: DeployCreateSchema, access_token: str, user: UserSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
         
