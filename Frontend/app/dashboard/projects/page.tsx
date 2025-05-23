@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,6 +11,8 @@ import { ProjectTable } from "@/components/dashboard/project-table"
 import { Filter, Plus, Search } from "lucide-react"
 
 export default function ProjectsPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -28,7 +33,13 @@ export default function ProjectsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search projects..." className="w-full pl-8" />
+              <Input 
+                type="search" 
+                placeholder="Search projects..." 
+                className="w-full pl-8" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" /> Filter
@@ -43,10 +54,10 @@ export default function ProjectsPage() {
               </TabsList>
             </div>
             <TabsContent value="grid" className="mt-4">
-              <ProjectGrid />
+              <ProjectGrid searchQuery={searchQuery} />
             </TabsContent>
             <TabsContent value="list" className="mt-4">
-              <ProjectTable />
+              <ProjectTable searchQuery={searchQuery} />
             </TabsContent>
           </Tabs>
         </CardContent>

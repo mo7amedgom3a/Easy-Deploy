@@ -19,7 +19,11 @@ import { projectsService, Project, ApiErrorResponse } from "@/lib/services/proje
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export function ProjectTable() {
+interface ProjectTableProps {
+  searchQuery?: string
+}
+
+export function ProjectTable({ searchQuery = "" }: ProjectTableProps) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -122,6 +126,20 @@ export function ProjectTable() {
     // TODO: Implement actual deployment logic
   }
 
+  // Filter projects based on search query
+  const filteredProjects = projects.filter((project) => {
+    if (!searchQuery.trim()) return true
+    
+    const query = searchQuery.toLowerCase()
+    return (
+      project.name.toLowerCase().includes(query) ||
+      (project.description && project.description.toLowerCase().includes(query)) ||
+      (project.repositoryUrl && project.repositoryUrl.toLowerCase().includes(query)) ||
+      (project.tags && project.tags.some(tag => tag.toLowerCase().includes(query))) ||
+      (project.framework && project.framework.toLowerCase().includes(query))
+    )
+  })
+
   if (loading) {
     return (
       <div className="relative w-full overflow-auto">
@@ -207,121 +225,127 @@ export function ProjectTable() {
     )
   }
 
-  if (projects.length === 0) {
+  if (filteredProjects.length === 0 && searchQuery.trim()) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center border rounded-md">
         <Github className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">No projects found</h3>
-        <p className="text-muted-foreground mb-4">Get started by creating your first project from a GitHub repository</p>
-        <Button asChild>
-          <Link href="/dashboard/projects/new">
-            <Rocket className="h-4 w-4 mr-2" />
-            Create Project
-          </Link>
+        <p className="text-muted-foreground mb-4">
+          No projects match your search for "{searchQuery}"
+        </p>
+        <Button onClick={() => window.location.reload()} variant="outline">
+          Clear Search
         </Button>
       </div>
     )
   }
 
   return (
-    <div className="relative w-full overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12">
-              <Checkbox />
-            </TableHead>
-            <TableHead>Project</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Framework</TableHead>
-            <TableHead>Last Deployed</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {projects.map((project) => (
-            <TableRow key={project.id}>
-              <TableCell>
+    <div className="space-y-4">
+      {searchQuery.trim() && (
+        <p className="text-sm text-muted-foreground">
+          Found {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''} matching "{searchQuery}"
+        </p>
+      )}
+      <div className="relative w-full overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
                 <Checkbox />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Github className="h-4 w-4" />
-                  <div>
-                    <div className="font-medium">{project.name}</div>
-                    <div className="text-sm text-muted-foreground line-clamp-1">{project.description}</div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(project.status)}
-                  <span className="text-sm">{getStatusText(project.status)}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                {project.framework && (
-                  <Badge variant="outline">
-                    {project.framework}
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                {project.lastDeployed ? (
-                  <span className="text-sm text-muted-foreground">
-                    {new Date(project.lastDeployed).toLocaleDateString()}
-                  </span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Never</span>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="sm"
-                    className="h-8 gap-1"
-                    onClick={() => handleDeploy(project)}
-                    disabled={project.status === "building"}
-                  >
-                    <Rocket className="h-3.5 w-3.5" />
-                    <span>{project.status === "building" ? "Building..." : "Deploy"}</span>
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">More options</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/projects/${project.id}`}>View Project</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/projects/${project.id}/settings`}>Edit Settings</Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/projects/${project.id}/logs`}>View Logs</Link>
-                      </DropdownMenuItem>
-                      {project.repositoryUrl && (
-                        <DropdownMenuItem asChild>
-                          <a href={project.repositoryUrl} target="_blank" rel="noopener noreferrer">
-                            View Repository
-                          </a>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive">Delete Project</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
+              </TableHead>
+              <TableHead>Project</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Framework</TableHead>
+              <TableHead>Last Deployed</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredProjects.map((project) => (
+              <TableRow key={project.id}>
+                <TableCell>
+                  <Checkbox />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Github className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">{project.name}</div>
+                      <div className="text-sm text-muted-foreground line-clamp-1">{project.description}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {getStatusIcon(project.status)}
+                    <span className="text-sm">{getStatusText(project.status)}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {project.framework && (
+                    <Badge variant="outline">
+                      {project.framework}
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {project.lastDeployed ? (
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(project.lastDeployed).toLocaleDateString()}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Never</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1"
+                      onClick={() => handleDeploy(project)}
+                      disabled={project.status === "building"}
+                    >
+                      <Rocket className="h-3.5 w-3.5" />
+                      <span>{project.status === "building" ? "Building..." : "Deploy"}</span>
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">More options</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/projects/${project.id}`}>View Project</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/projects/${project.id}/settings`}>Edit Settings</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/projects/${project.id}/logs`}>View Logs</Link>
+                        </DropdownMenuItem>
+                        {project.repositoryUrl && (
+                          <DropdownMenuItem asChild>
+                            <a href={project.repositoryUrl} target="_blank" rel="noopener noreferrer">
+                              View Repository
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive">Delete Project</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
