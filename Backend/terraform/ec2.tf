@@ -31,8 +31,22 @@ resource "aws_launch_template" "ecs_lt" {
               #!/bin/bash
               mkdir -p /etc/ecs
               echo ECS_CLUSTER=${aws_ecs_cluster.ecs_cluster.name} >> /etc/ecs/ecs.config
+              
+              # Install EFS utilities
+              yum install -y amazon-efs-utils
+              
+              # Create mount directory
+              mkdir -p /mnt/repos
+              
+              # Mount EFS
+              mount -t efs -o tls ${aws_efs_file_system.repo_storage.id}:/ /mnt/repos
+              
+              # Add mount to fstab for persistence
+              echo "${aws_efs_file_system.repo_storage.id}:/ /mnt/repos efs _netdev,tls 0 0" >> /etc/fstab
               EOF
   )
+
+  
   
 }
 resource "aws_ec2_instance_connect_endpoint" "ecs_instance_connect_endpoint" {

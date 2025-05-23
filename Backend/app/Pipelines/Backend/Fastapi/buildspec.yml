@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$ECR_REPO_URL
+      - IMAGE_TAG=latest
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $ECR_REPO_URL:$IMAGE_TAG --build-arg PORT=$PORT --build-arg ENTRY_POINT=$ENTRY_POINT .
+      - docker tag $ECR_REPO_URL:$IMAGE_TAG $ECR_REPO_URL:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $ECR_REPO_URL:latest
+      - echo Writing image definitions file...
+      - printf '{"ImageURI":"%s"}' $ECR_REPO_URL:$IMAGE_TAG > imageDetail.json
+artifacts:
+  files:
+    - imageDetail.json
+    - appspec.yaml
+    - taskdef.json 
