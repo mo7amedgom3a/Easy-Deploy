@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { API_URL } from '@/lib/constants';
-import { githubService } from '@/lib/services/github';
 
 /**
  * Convert a GitHub repository to a project format
@@ -37,21 +36,80 @@ export async function GET() {
       );
     }
     
-    const response = await fetch(`${API_URL}/deploy/projects`, {
-      headers: {
-        'Authorization': `Bearer ${authToken.value}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch projects: ${response.statusText}`);
+    // Try to fetch projects from the backend API
+    try {
+      const response = await fetch(`${API_URL}/deploy/projects`, {
+        headers: {
+          'Authorization': `Bearer ${authToken.value}`,
+          'Content-Type': 'application/json',
+        },
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Successfully fetched projects from backend:', data);
+        return NextResponse.json(data);
+      } else {
+        console.log(`Backend projects API returned ${response.status}, falling back to GitHub repositories`);
+      }
+    } catch (backendError) {
+      console.error('Backend projects API error:', backendError);
+      console.log('Falling back to GitHub repositories');
     }
     
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Fallback: Fetch GitHub repositories if backend projects API fails
+    try {
+      // First get the current user
+      const userResponse = await fetch(`${API_URL}/users/github/me/`, {
+        headers: {
+          'Authorization': `Bearer ${authToken.value}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!userResponse.ok) {
+        throw new Error(`Failed to fetch user: ${userResponse.statusText}`);
+      }
+      
+      const userData = await userResponse.json();
+      const username = userData.login;
+      
+      if (!username) {
+        throw new Error('No username found in user data');
+      }
+      
+      // Fetch repositories for this user
+      const reposResponse = await fetch(`${API_URL}/git/repository/${username}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken.value}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!reposResponse.ok) {
+        throw new Error(`Failed to fetch repositories: ${reposResponse.statusText}`);
+      }
+      
+      const repos = await reposResponse.json();
+      
+      if (Array.isArray(repos)) {
+        const projects = repos.map(repo => convertRepoToProject(repo));
+        console.log(`Returning ${projects.length} GitHub repositories as projects`);
+        return NextResponse.json(projects);
+      } else {
+        console.log('Invalid repositories response format');
+        return NextResponse.json([]);
+      }
+    } catch (githubError) {
+      console.error('Error fetching GitHub repositories:', githubError);
+      return NextResponse.json(
+        { error: 'Failed to fetch projects and repositories' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error('Error in projects API:', error);
     return NextResponse.json(
       { error: 'Failed to fetch projects' },
       { status: 500 }

@@ -103,7 +103,7 @@ To deploy the application, you will need to containerize the backend and fronten
         ports:
           - "3000:3000"
         environment:
-          - NEXT_PUBLIC_API_URL=your_api_url
+          - NEXT_PUBLIC_BACKEND_API_URL=your_backend_api_url
     ```
 
     To deploy the application using Docker Compose:
@@ -156,7 +156,7 @@ We welcome contributions to the project! Here are the steps to contribute:
     Create a `.env.local` file in the `Frontend/` directory and add any necessary environment variables. For example:
 
     ```bash
-    NEXT_PUBLIC_API_URL=your_api_url
+    NEXT_PUBLIC_BACKEND_API_URL=http://127.0.0.1:8000
     ```
 
     Create the file if it doesn't already exist.

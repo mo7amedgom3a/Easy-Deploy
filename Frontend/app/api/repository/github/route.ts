@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { API_URL } from '@/lib/constants';
 
@@ -6,7 +6,7 @@ import { API_URL } from '@/lib/constants';
  * GET handler for fetching GitHub user repositories
  * Acts as a proxy to the backend API with helpful error messages
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     // Get authentication token from cookies
     const cookieStore = await cookies();
@@ -21,8 +21,8 @@ export async function GET(request: Request) {
     }
     
     // Get the username from query param
-    const url = new URL(request.url);
-    const username = url.searchParams.get('username');
+    const { searchParams } = new URL(request.url);
+    const username = searchParams.get('username');
     
     if (!username) {
       console.error('Missing username parameter in repository request');
@@ -148,4 +148,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

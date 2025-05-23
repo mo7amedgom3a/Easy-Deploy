@@ -53,10 +53,22 @@ This will start the development server and open the application in your browser 
 
     -   **Projects:**
         -   Path: `/dashboard/projects`
-        -   Description: Lists all projects.
+        -   Description: Lists all projects with grid and list views, with fallback to GitHub repositories when backend is unavailable.
         -   **New Project:**
             -   Path: `/dashboard/projects/new`
-            -   Description: Allows users to create a new project.
+            -   Description: Allows users to create a new project from GitHub repositories.
+        -   **Project Details:**
+            -   Path: `/dashboard/projects/[id]`
+            -   Description: Shows detailed information about a specific project.
+        -   **Project Logs:**
+            -   Path: `/dashboard/projects/[id]/logs`
+            -   Description: Shows logs for a specific project.
+        -   **Project Analytics:**
+            -   Path: `/dashboard/projects/[id]/analytics`
+            -   Description: Shows analytics for a specific project.
+        -   **Project Deployments:**
+            -   Path: `/dashboard/projects/[id]/deployments`
+            -   Description: Shows deployment history for a specific project.
     -   **Deployments:**
         -   Path: `/dashboard/deployments`
         -   Description: Lists all deployments.
@@ -69,10 +81,28 @@ This will start the development server and open the application in your browser 
 
 ## Components
 
-The frontend uses a variety of components, including:
+### Project Components
 
--   UI components from `Frontend/components/ui`
--   Dashboard components from `Frontend/components/dashboard`
+-   **ProjectGrid**: Grid view of projects with error handling and GitHub fallback
+-   **ProjectList**: Table view of projects with consistent error handling
+-   **RecentDeployments**: Shows recent deployment activity with fallback to GitHub commits
+-   **ActivityFeed**: Shows recent account activity
+-   **DeploymentStats**: Overview statistics for deployments
+-   **ResourceUsage**: Resource consumption monitoring
+
+### Error Handling
+
+Both ProjectGrid and ProjectList components implement consistent error handling:
+- Loading states with skeleton placeholders
+- Error states with retry functionality
+- Graceful fallback to GitHub repositories when backend is unavailable
+- User-friendly error messages and toast notifications
+
+### Authentication
+
+- Token-based authentication with GitHub
+- Automatic token refresh and error handling
+- Fallback mechanisms when authentication fails
 
 ## Hooks
 

@@ -1,124 +1,271 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { CheckCircle2, Github, MoreHorizontal, Rocket, XCircle } from "lucide-react"
+  CheckCircle2,
+  Clock,
+  Github,
+  Globe,
+  MoreHorizontal,
+  Rocket,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  ExternalLink
+} from "lucide-react"
+import Link from "next/link"
+import { projectsService, Project, ApiErrorResponse } from "@/lib/services/projects"
 
 export function ProjectGrid() {
-  return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {projects.map((project) => (
-        <Card key={project.id} className="overflow-hidden">
-          <CardHeader className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Github className="h-5 w-5" />
-                <CardTitle className="text-base">{project.name}</CardTitle>
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchProjects = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const result = await projectsService.getProjects()
+      
+      if (Array.isArray(result)) {
+        setProjects(result)
+      } else if (result && 'error' in result) {
+        setError(result.error)
+        setProjects([])
+      } else {
+        setError("Unexpected response format")
+        setProjects([])
+      }
+    } catch (err) {
+      console.error("Error fetching projects:", err)
+      setError(err instanceof Error ? err.message : "Failed to fetch projects")
+      setProjects([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjects()
+  }, [])
+
+  const isGitHubRepo = (project: Project) => {
+    return project.id.startsWith('github_') && project.status === 'not_deployed'
+  }
+
+  const handleDeploy = async (project: Project) => {
+    // Implement deploy logic here
+  }
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "success":
+        return "green"
+      case "failed":
+        return "red"
+      case "building":
+        return "orange"
+      case "not_deployed":
+        return "gray"
+      default:
+        return "gray"
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "success":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />
+      case "failed":
+        return <XCircle className="h-4 w-4 text-red-500" />
+      case "building":
+        return <Clock className="h-4 w-4 text-orange-500 animate-spin" />
+      case "not_deployed":
+        return <Clock className="h-4 w-4 text-gray-500" />
+      default:
+        return null
+    }
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "success":
+        return "Deployed"
+      case "failed":
+        return "Failed"
+      case "building":
+        return "Building"
+      case "not_deployed":
+        return "Not Deployed"
+      default:
+        return ""
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-full" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-6 w-20" />
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">More options</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>View Project</DropdownMenuItem>
-                  <DropdownMenuItem>Edit Settings</DropdownMenuItem>
-                  <DropdownMenuItem>View Logs</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">Delete Project</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-8 w-8" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription className="flex items-center justify-between">
+          <span>{error}</span>
+          <Button size="sm" variant="outline" onClick={fetchProjects}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Github className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">No projects found</h3>
+        <p className="text-muted-foreground mb-4">
+          Get started by creating your first project from a GitHub repository.
+        </p>
+        <Button asChild>
+          <Link href="/dashboard/projects/new">
+            <Rocket className="h-4 w-4 mr-2" />
+            Create Project
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {projects.map((project) => (
+        <Card key={project.id} className="group hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <Github className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <CardTitle className="text-lg">{project.name}</CardTitle>
+                  <CardDescription className="line-clamp-2 text-sm">
+                    {project.description}
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant={getStatusVariant(project.status)}>
+                {getStatusIcon(project.status)}
+                {getStatusText(project.status)}
+              </Badge>
             </div>
-            <CardDescription className="line-clamp-2 mt-1">{project.description}</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="flex flex-wrap gap-2">
-              {project.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {project.tags && project.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {project.tags.slice(0, 3).map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {project.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{project.tags.length - 3}
+                    </Badge>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>
+                  {project.lastDeployed ? (
+                    `Updated ${new Date(project.lastDeployed).toLocaleDateString()}`
+                  ) : (
+                    "Never deployed"
+                  )}
+                </span>
+                {project.environment && (
+                  <Badge variant="outline" className="text-xs">
+                    {project.environment}
+                  </Badge>
+                )}
+              </div>
+              
+              <div className="flex gap-2 pt-2">
+                {isGitHubRepo(project) ? (
+                  <>
+                    <Button 
+                      className="flex-1 gap-1.5" 
+                      onClick={() => handleDeploy(project)}
+                    >
+                      <Rocket className="h-3.5 w-3.5" />
+                      Deploy Now
+                    </Button>
+                    {project.repositoryUrl && (
+                      <Button variant="outline" size="icon" asChild>
+                        <a href={project.repositoryUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" className="flex-1" asChild>
+                      <Link href={`/dashboard/projects/${project.id}`}>
+                        View Project
+                      </Link>
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      onClick={() => handleDeploy(project)}
+                      disabled={project.status === "building"}
+                    >
+                      <Rocket className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </CardContent>
-          <CardFooter className="flex items-center justify-between border-t bg-muted/50 p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {project.status === "success" && (
-                <>
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>Deployed</span>
-                </>
-              )}
-              {project.status === "failed" && (
-                <>
-                  <XCircle className="h-4 w-4 text-destructive" />
-                  <span>Failed</span>
-                </>
-              )}
-            </div>
-            <Button size="sm" className="gap-1">
-              <Rocket className="h-3.5 w-3.5" />
-              <span>Deploy</span>
-            </Button>
-          </CardFooter>
         </Card>
       ))}
     </div>
   )
 }
 
-const projects = [
-  {
-    id: "1",
-    name: "E-commerce Frontend",
-    description: "React-based e-commerce storefront with cart and checkout functionality",
-    tags: ["React", "Next.js", "TypeScript"],
-    status: "success",
-  },
-  {
-    id: "2",
-    name: "API Backend",
-    description: "RESTful API service for the e-commerce platform",
-    tags: ["Node.js", "Express", "MongoDB"],
-    status: "failed",
-  },
-  {
-    id: "3",
-    name: "Marketing Website",
-    description: "Company marketing website with blog and contact forms",
-    tags: ["Next.js", "Tailwind CSS"],
-    status: "success",
-  },
-  {
-    id: "4",
-    name: "Admin Dashboard",
-    description: "Internal admin dashboard for managing products and orders",
-    tags: ["React", "Material UI", "Redux"],
-    status: "success",
-  },
-  {
-    id: "5",
-    name: "Mobile App Backend",
-    description: "API services for the mobile application",
-    tags: ["Node.js", "Express", "PostgreSQL"],
-    status: "success",
-  },
-  {
-    id: "6",
-    name: "Analytics Service",
-    description: "Data processing and analytics service for business intelligence",
-    tags: ["Python", "FastAPI", "Pandas"],
-    status: "failed",
-  },
-]
+// If you have dynamic imports, ensure they're correct
+// Example of proper dynamic import:
+// const DynamicComponent = dynamic(() => import('./SomeComponent'), {
+//   loading: () => <p>Loading...</p>
+// })
 

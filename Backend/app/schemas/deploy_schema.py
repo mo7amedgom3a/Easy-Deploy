@@ -16,7 +16,7 @@ class BaseDeploySchema(BaseModel):
     environment_variables: Optional[Dict[str, str]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         extra = "allow"
 
 
@@ -43,4 +43,4 @@ class DeployUpdate(BaseModel):
     updated_at: datetime = datetime.now()
 
     class Config:
-        orm_mode = True
+        from_attributes = True

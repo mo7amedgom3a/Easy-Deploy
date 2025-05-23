@@ -16,5 +16,5 @@ class Repository(BaseModel):
     languages: List[str] | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
     

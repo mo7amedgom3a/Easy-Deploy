@@ -2,6 +2,8 @@ import os
 import subprocess
 from typing import List, Optional, Dict, Any, Union
 import logging
+import tempfile
+from pathlib import Path
 
 import httpx
 from httpx import AsyncClient, HTTPStatusError
@@ -17,25 +19,47 @@ class GitRepositoryService:
     
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
-        # EFS volume mount point in Docker container
-        self.dir_base = "/mnt/repos" # change in production 
+        # Read from environment variable with fallbacks
+        self.dir_base = self._get_base_directory()
         self.base_url = "https://api.github.com"
         self.webhook_url = "https://monkfish-feasible-heavily.ngrok-free.app/git/repository/webhook/"
         
         # Ensure the base directory exists and has proper permissions
         self._ensure_base_directory()
     
+    def _get_base_directory(self) -> str:
+        """Get the base directory from environment with proper fallbacks."""
+        # Try environment variable first
+        env_dir = os.getenv("DIR_BASE")
+        if env_dir and env_dir != "/mnt/repos":
+            return env_dir
+        
+        # Fallback to user home directory
+        home_dir = os.path.expanduser("~/repos")
+        
+        # If running in production container, use /app/repos
+        if os.path.exists("/app"):
+            return "/app/repos"
+        
+        return home_dir
+    
     def _ensure_base_directory(self):
         """Ensure the base directory exists and has proper permissions."""
         try:
-            if not os.path.exists(self.dir_base):
-                os.makedirs(self.dir_base, exist_ok=True)
-                logger.info(f"Created base directory at {self.dir_base}")
-            
-            # Ensure the directory has proper permissions
-            os.chmod(self.dir_base, 0o755)
+            os.makedirs(self.dir_base, mode=0o755, exist_ok=True)
+            # Test write permissions
+            test_file = os.path.join(self.dir_base, ".write_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+            logger.info(f"Using repository base directory: {self.dir_base}")
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Failed to setup base directory {self.dir_base}: {e}")
+            # Fallback to temp directory
+            self.dir_base = tempfile.mkdtemp(prefix="easy_deploy_repos_")
+            logger.info(f"Using temporary directory: {self.dir_base}")
         except Exception as e:
-            logger.error(f"Failed to setup base directory: {str(e)}")
+            logger.error(f"Unexpected error setting up directory: {e}")
             raise
     
     # === API Interaction Methods ===

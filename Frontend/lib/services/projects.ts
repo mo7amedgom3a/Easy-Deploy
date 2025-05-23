@@ -36,32 +36,115 @@ export const projectsService = {
    */
   async getProjects(): Promise<Project[] | ApiErrorResponse> {
     try {
-      const response = await apiClient.get('/projects/');
+      // Use the frontend API route instead of calling backend directly
+      const response = await fetch('/api/projects', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        cache: 'no-store'
+      });
       
-      // Check if response is an error object
-      if (response && typeof response === 'object' && 'error' in response) {
-        console.error('API returned an error:', response.error);
-        return response as ApiErrorResponse;
-      }
-      
-      // Check if response is an array (projects data) or has a message field (error)
-      if (Array.isArray(response)) {
-        return response;
-      } else if (response.projects && Array.isArray(response.projects)) {
-        return response.projects;
-      } else if (response.message) {
-        console.log('API message:', response.message);
+      // Check if response is ok
+      if (!response.ok) {
+        console.error('API request failed:', response.status, response.statusText);
         
-        // If no projects found, try to get GitHub repositories as fallback
-        const githubUser = await githubService.getCurrentUser();
-        if (githubUser && githubUser.login) {
-          const repos = await githubService.getRepositories(githubUser.login);
+        // If API fails, try to get GitHub repositories as fallback
+        try {
+          // First get the current user to get their username
+          const userResponse = await fetch('/api/auth/user', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            cache: 'no-store'
+          });
           
-          // Convert GitHub repositories to project format
-          return repos.map(repo => convertRepoToProject(repo));
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            const username = userData.username || userData.login;
+            
+            if (username) {
+              const githubResponse = await fetch(`/api/repository/github?username=${encodeURIComponent(username)}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                cache: 'no-store'
+              });
+              
+              if (githubResponse.ok) {
+                const githubData = await githubResponse.json();
+                if (Array.isArray(githubData)) {
+                  return githubData.map(repo => convertRepoToProject(repo));
+                }
+              }
+            }
+          }
+        } catch (githubError) {
+          console.error('Error fetching GitHub repositories:', githubError);
         }
         
-        return [];
+        return {
+          error: `Failed to fetch projects: ${response.status} ${response.statusText}`,
+          status: 'error'
+        };
+      }
+      
+      const data = await response.json();
+      
+      // Check if response contains an error
+      if (data && typeof data === 'object' && 'error' in data) {
+        console.error('API returned an error:', data.error);
+        return data as ApiErrorResponse;
+      }
+      
+      // Check if response is an array (projects data)
+      if (Array.isArray(data)) {
+        return data;
+      } else if (data.projects && Array.isArray(data.projects)) {
+        return data.projects;
+      }
+      
+      // If no projects found, try GitHub repositories as fallback
+      try {
+        // First get the current user to get their username
+        const userResponse = await fetch('/api/auth/user', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          cache: 'no-store'
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          const username = userData.username || userData.login;
+          
+          if (username) {
+            const githubResponse = await fetch(`/api/repository/github?username=${encodeURIComponent(username)}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              cache: 'no-store'
+            });
+            
+            if (githubResponse.ok) {
+              const githubData = await githubResponse.json();
+              if (Array.isArray(githubData)) {
+                return githubData.map(repo => convertRepoToProject(repo));
+              }
+            }
+          }
+        }
+      } catch (githubError) {
+        console.error('Error fetching GitHub repositories:', githubError);
       }
       
       return [];
@@ -73,12 +156,37 @@ export const projectsService = {
       
       // Try to get GitHub repositories as fallback
       try {
-        const githubUser = await githubService.getCurrentUser();
-        if (githubUser && githubUser.login) {
-          const repos = await githubService.getRepositories(githubUser.login);
+        // First get the current user to get their username
+        const userResponse = await fetch('/api/auth/user', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          cache: 'no-store'
+        });
+        
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          const username = userData.username || userData.login;
           
-          // Convert GitHub repositories to project format
-          return repos.map(repo => convertRepoToProject(repo));
+          if (username) {
+            const githubResponse = await fetch(`/api/repository/github?username=${encodeURIComponent(username)}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              cache: 'no-store'
+            });
+            
+            if (githubResponse.ok) {
+              const githubData = await githubResponse.json();
+              if (Array.isArray(githubData)) {
+                return githubData.map(repo => convertRepoToProject(repo));
+              }
+            }
+          }
         }
       } catch (githubError) {
         console.error('Error fetching GitHub repositories:', githubError);
