@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from services.oauth import get_github_user
 from services.user import UserService
 from typing import Optional
+from schemas.user_schema import UserSchema
 
 from services.jwt import create_access_token
 from dependencies.services import get_user_service
@@ -92,11 +93,11 @@ async def github_callback(
     return JSONResponse(content=response_data)
 
 @router.get("/check")
-async def check_auth(current_user = Depends(get_current_user)):
+async def check_auth(current_user: UserSchema = Depends(get_current_user)):
     """
     Check if the current user is authenticated and return their info
     """
     return {
-        "isAuthenticated": True
-       
+        "isAuthenticated": True,
+        "user": current_user
     }

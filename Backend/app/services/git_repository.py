@@ -28,20 +28,10 @@ class GitRepositoryService:
         self._ensure_base_directory()
     
     def _get_base_directory(self) -> str:
-        """Get the base directory from environment with proper fallbacks."""
-        # Try environment variable first
-        env_dir = os.getenv("DIR_BASE")
-        if env_dir and env_dir != "/mnt/repos":
-            return env_dir
-        
-        # Fallback to user home directory
-        home_dir = os.path.expanduser("~/repos")
-        
-        # If running in production container, use /app/repos
-        if os.path.exists("/app"):
-            return "/app/repos"
-        
-        return home_dir
+        dir_base = os.getenv("DIR_BASE")
+        if dir_base:
+            return dir_base
+        return "/mnt/repos"
     
     def _ensure_base_directory(self):
         """Ensure the base directory exists and has proper permissions."""

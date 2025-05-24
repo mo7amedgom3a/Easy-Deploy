@@ -2,8 +2,8 @@
 export * from './projects';
 export * from './deployments';
 export * from './logs';
-export * from './analytics';
+export type { TimeRange as AnalyticsTimeRange } from './analytics';
 export * from './github';
 
 // Auth Service
-export { default as authService } from './auth';
+export * from './auth';

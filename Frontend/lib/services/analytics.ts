@@ -1,6 +1,5 @@
 import { apiClient } from "../api-client";
 import { githubService } from "./github";
-
 export type TimeRange = "24h" | "7d" | "30d" | "90d";
 
 export interface BaseDataPoint {
