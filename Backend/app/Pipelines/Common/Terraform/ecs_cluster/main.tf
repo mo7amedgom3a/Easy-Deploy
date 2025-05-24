@@ -156,7 +156,6 @@ resource "aws_ecs_service" "ecs_service" {
   network_configuration {
     subnets         = [var.private_subnet_id]
     security_groups = [aws_security_group.security_group.id]
-    
   }
 
   force_new_deployment = true
@@ -168,10 +167,8 @@ resource "aws_ecs_service" "ecs_service" {
     redeployment = timestamp()
   }
 
-
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
-    
     container_name   = var.aws_ecs_task_container_name
     container_port   = var.ecs_task_container_port
   }

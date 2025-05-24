@@ -22,6 +22,7 @@ async def get_github_user(code: str):
             # Check for HTTP error and log response for debugging
             if token_resp.status_code != 200:
                 print(f"GitHub OAuth token request failed with status {token_resp.status_code}: {token_resp.text}")
+                print(f"Request data: client_id={settings.CLIENT_ID}, redirect_uri={settings.REDIRECT_URI}")
                 return None
                 
             token_data = token_resp.json()

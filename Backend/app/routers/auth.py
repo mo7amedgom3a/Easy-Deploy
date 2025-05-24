@@ -34,11 +34,13 @@ async def logout_post(authorization: Optional[str] = Header(None)):
     return response
 
 @router.get("/login")
-async def login(state: str = None):    
+async def login(state: Optional[str] = None):    
     # Updated GitHub scope to ensure proper repository and user access
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
-        f"?client_id={settings.CLIENT_ID}&redirect_uri={settings.REDIRECT_URI}&scope=repo:status read:repo_hook"
+        f"?client_id={settings.CLIENT_ID}"
+        f"&redirect_uri={settings.REDIRECT_URI}"
+        f"&scope=repo:status read:repo_hook"
     )
     
     # Add state parameter if provided (used for redirecting back to the correct page)
@@ -51,7 +53,7 @@ async def login(state: str = None):
 async def github_callback(
     request: Request, 
     code: str, 
-    state: str = None,
+    state: Optional[str] = None,
     user_service: UserService = Depends(get_user_service)
 ):
     """
@@ -74,9 +76,27 @@ async def github_callback(
     if not token:
         raise HTTPException(status_code=400, detail="Token creation failed")
     
-    # Return the state parameter if it was provided
-    response = {"jwt_token": token}
-    if state:
-        response["state"] = state
+    # Return the token and state in the response
+    response_data = {
+        "token": token,
+        "user": {
+           
+            "login": user.login,
+            "github_id": user.github_id
+        }
+    }
     
-    return response
+    if state:
+        response_data["state"] = state
+    
+    return JSONResponse(content=response_data)
+
+@router.get("/check")
+async def check_auth(current_user = Depends(get_current_user)):
+    """
+    Check if the current user is authenticated and return their info
+    """
+    return {
+        "isAuthenticated": True
+       
+    }

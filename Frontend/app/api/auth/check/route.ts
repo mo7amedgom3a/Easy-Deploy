@@ -1,48 +1,49 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from '@/lib/constants';
+import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get the token from the cookie
     const cookieStore = await cookies();
-    const authToken = cookieStore.get('authToken');
+    const authCookie = cookieStore.get('authorization');
     
-    if (!authToken) {
-      return NextResponse.json(
-        { authenticated: false, error: 'No authentication token found' },
-        { status: 401 }
-      );
-    }
-    
-    // Validate the token with the backend
-    try {
-      const response = await fetch(`${API_URL}/users/github/me/`, {
-        headers: {
-          'Authorization': `Bearer ${authToken.value}`,
-          'Content-Type': 'application/json',
-        },
+    if (!authCookie) {
+      return NextResponse.json({ 
+        isAuthenticated: false,
+        user: null
       });
-      
-      if (!response.ok) {
-        return NextResponse.json(
-          { authenticated: false, error: `Token validation failed: ${response.statusText}` },
-          { status: 401 }
-        );
-      }
-      
-      return NextResponse.json({ authenticated: true });
-    } catch (error) {
-      console.error('Error validating authentication token:', error);
-      return NextResponse.json(
-        { authenticated: false, error: 'Failed to validate authentication token' },
-        { status: 500 }
-      );
     }
+
+    // Call backend to check authentication status
+    const response = await fetch(`${API_URL}/auth/check`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authCookie.value
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      // If the token is invalid, clear the cookie
+      const errorResponse = NextResponse.json({ 
+        isAuthenticated: false,
+        user: null
+      });
+      errorResponse.cookies.delete('authorization');
+      return errorResponse;
+    }
+
+    const data = await response.json();
+    return NextResponse.json({
+      isAuthenticated: true,
+      user: data.user
+    });
   } catch (error) {
-    console.error('Error checking authentication:', error);
-    return NextResponse.json(
-      { authenticated: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Auth check error:', error);
+    return NextResponse.json({ 
+      isAuthenticated: false,
+      user: null
+    });
   }
 }
