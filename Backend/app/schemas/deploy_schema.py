@@ -16,7 +16,7 @@ class BaseDeploySchema(BaseModel):
     environment_variables: Optional[Dict[str, str]] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
         extra = "allow"
 
 
@@ -24,6 +24,9 @@ class DeployCreateSchema(BaseDeploySchema):
     """Schema for creating a new deployment"""
     build_command: Optional[str] = None
     run_command: Optional[str] = None
+    class Config:
+        orm_mode = True
+        extra = "allow"
 
 
 class DeploySchema(BaseDeploySchema):
@@ -43,4 +46,4 @@ class DeployUpdate(BaseModel):
     updated_at: datetime = datetime.now()
 
     class Config:
-        from_attributes = True
+        orm_mode = True

@@ -162,7 +162,6 @@ resource "aws_ecs_service" "ecs_service" {
   placement_constraints {
     type = "distinctInstance"
   }
-
   triggers = {
     redeployment = timestamp()
   }

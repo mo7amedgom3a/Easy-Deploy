@@ -7,8 +7,13 @@ from routers import user, auth, git_repositories, aws_user, deploy
 import os
 from dotenv import load_dotenv
 from dependencies.database_connection import DatabaseConnection
+from config.logging_config import setup_logging
 
 load_dotenv()
+
+# Initialize logging
+loggers = setup_logging()
+logger = loggers['api']
 
 app = FastAPI()
 
@@ -51,14 +56,18 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_db_client():
     await DatabaseConnection().connect()
+    logger.info("Application starting up...")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
     await DatabaseConnection().close()
+    logger.info("Application shutting down...")
+
 # for health check on aws
 @app.get("/")
 def root():
     return {"message": "Hello"}
+
 # Routers that require authentication
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(aws_user.router, dependencies=[Depends(oauth2_scheme)])

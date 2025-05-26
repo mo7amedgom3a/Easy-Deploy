@@ -12,7 +12,7 @@ from repositories.git_repository import GitRepository
 from schemas.repository import RepositorySchema
 from services.user import UserService
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('git')
 
 class GitRepositoryService:
     """Service for interacting with Git repositories (primarily GitHub)."""
@@ -24,13 +24,16 @@ class GitRepositoryService:
         self.base_url = "https://api.github.com"
         self.webhook_url = "https://monkfish-feasible-heavily.ngrok-free.app/git/repository/webhook/"
         
+        logger.info(f"Initializing GitRepositoryService with base directory: {self.dir_base}")
         # Ensure the base directory exists and has proper permissions
         self._ensure_base_directory()
     
     def _get_base_directory(self) -> str:
         dir_base = os.getenv("DIR_BASE")
         if dir_base:
+            logger.info(f"Using configured base directory: {dir_base}")
             return dir_base
+        logger.info("Using default base directory: /mnt/repos")
         return "/mnt/repos"
     
     def _ensure_base_directory(self):
@@ -42,12 +45,12 @@ class GitRepositoryService:
             with open(test_file, "w") as f:
                 f.write("test")
             os.remove(test_file)
-            logger.info(f"Using repository base directory: {self.dir_base}")
+            logger.info(f"Successfully set up base directory: {self.dir_base}")
         except (PermissionError, OSError) as e:
             logger.warning(f"Failed to setup base directory {self.dir_base}: {e}")
             # Fallback to temp directory
             self.dir_base = tempfile.mkdtemp(prefix="easy_deploy_repos_")
-            logger.info(f"Using temporary directory: {self.dir_base}")
+            logger.info(f"Using temporary directory as fallback: {self.dir_base}")
         except Exception as e:
             logger.error(f"Unexpected error setting up directory: {e}")
             raise
@@ -231,6 +234,8 @@ class GitRepositoryService:
         clone_url = f"https://{access_token}@github.com/{owner}/{repo_name}.git"
         clone_dir = f"{self.dir_base}/{owner}/{repo_name}"
         
+        logger.info(f"Attempting to clone repository: {owner}/{repo_name}")
+        
         try:
             # Create parent directories if they don't exist
             os.makedirs(os.path.dirname(clone_dir), exist_ok=True)
@@ -238,10 +243,9 @@ class GitRepositoryService:
             # Check if directory already exists
             if os.path.exists(clone_dir):
                 logger.warning(f"Repository directory already exists at {clone_dir}")
-
                 return {"message": "Repository directory already exists", "path": clone_dir}
-            else:
-                print("Cloning repository to", clone_dir)
+            
+            logger.info(f"Cloning repository to {clone_dir}")
             # Clone the repository
             result = subprocess.run(
                 ["git", "clone", clone_url, clone_dir],
@@ -249,8 +253,6 @@ class GitRepositoryService:
                 capture_output=True,
                 text=True
             )
-            # print the current working directory
-            print("Current working directory:", os.getcwd())
             
             # Set proper permissions for the cloned repository
             os.chmod(clone_dir, 0o755)

@@ -4,6 +4,7 @@ import re
 import shutil
 from pathlib import Path
 from typing import Dict
+import logging
 
 from fastapi import HTTPException
 from python_terraform import Terraform
@@ -17,6 +18,8 @@ from services.aws_user import AWSUserService
 from services.git_repository import GitRepositoryService
 from services.aws_codebuild import AWSCodeBuild
 
+logger = logging.getLogger('deploy')
+
 class DeployService:
     def __init__(self, deploy_repository: DeployRepository, aws_user_service: AWSUserService, git_repository_service: GitRepositoryService):
         """Initialize DeployService with repository and service dependencies."""
@@ -28,6 +31,7 @@ class DeployService:
         self.codebuild_service = AWSCodeBuild()
         self.framework_config = self._load_framework_config()
         self.supported_frameworks = self._get_supported_frameworks()
+        logger.info("DeployService initialized successfully")
     def _validate_path(self, path: str) -> bool:
         """Validate path to prevent directory traversal attacks."""
         normalized = os.path.normpath(path)
@@ -37,15 +41,19 @@ class DeployService:
         """Load framework configuration from JSON file."""
         frameworks_path = Path(__file__).resolve().parent / "frameworks.json"
         if not frameworks_path.exists():
+            logger.error("frameworks.json not found")
             raise FileNotFoundError("frameworks.json not found")
 
         try:
             with open(frameworks_path, "r") as f:
                 config = json.load(f)
+                logger.info("Successfully loaded framework configuration")
                 return config
         except json.JSONDecodeError:
+            logger.error("Invalid JSON in frameworks.json")
             raise ValueError("Invalid JSON in frameworks.json")
         except Exception as e:
+            logger.error(f"Error loading framework config: {str(e)}")
             raise RuntimeError(f"Error loading framework config: {str(e)}")
 
     def _get_supported_frameworks(self) -> set:
@@ -94,7 +102,10 @@ class DeployService:
             raise ValueError("Invalid repo name")
         if not owner or not isinstance(owner, str):
             raise ValueError("Invalid owner")
-        return await self.deploy_repository.get_deploy(repo_name, owner)
+        deploy = await self.deploy_repository.get_deploy(repo_name, owner)
+        if not deploy:
+            raise ValueError(f"Deployment not found for {owner}/{repo_name}")
+        return deploy
     
     async def destroy_terraform_resources(self, owner: str, repo_name: str) -> Dict[str, str]:
         """Destroy Terraform resources for a given repository."""
@@ -114,25 +125,29 @@ class DeployService:
         
     async def create_deploy(self, deploy: DeployCreateSchema, access_token: str, user: UserSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
+        logger.info(f"Starting deployment process for repository: {deploy.owner}/{deploy.repo_name}")
         
         if not access_token or not isinstance(access_token, str):
+            logger.error("Invalid access token provided")
             raise ValueError("Invalid access token")
         
         if not user.github_id:
+            logger.error("User's GitHub ID is required")
             raise ValueError("User's GitHub ID is required")
-            
         aws_user = await self.get_aws_user(user.github_id)
-       
         if not aws_user:
-            # if the first deploy, create a new user
+            logger.info(f"Creating new AWS user for GitHub ID: {user.github_id}")
             try:
                 aws_user = await self.aws_user_service.create_user(user.github_id)
             except Exception as e:
+                logger.error(f"Error creating AWS user: {str(e)}")
                 raise ValueError(f"Error creating AWS user: {str(e)}")
         if not aws_user:
+            logger.error("AWS user not found or could not be created")
             raise ValueError("AWS user not found or could not be created.")
        
         if not deploy.framework:
+            logger.error("Framework is required")
             raise ValueError("Framework is required")
             
         framework = deploy.framework.lower()
@@ -140,15 +155,14 @@ class DeployService:
 
         framework_defaults = self.framework_config.get(framework_type, {}).get(framework)
         if not framework_defaults:
+            logger.error(f"Unsupported framework: {framework}")
             raise ValueError(
                 f"Unsupported framework: {framework}. "
                 f"Supported frameworks are: {list(self.supported_frameworks)}"
             )
 
-        # Merge user input with defaults (user input overrides defaults if provided)
-
+        # Merge user input with defaults
         deploy_data = deploy.dict(exclude_unset=True)
-        
         
         # Sanitize commands before using them
         build_command = self._sanitize_commands(deploy_data.get("build_command") or framework_defaults["build_command"])
@@ -164,72 +178,69 @@ class DeployService:
         deploy_data["owner"] = deploy.owner
         deploy_data["webhook_id"] = None
 
-        # Validate the framework type and ensure it matches the provided framework.
-        if framework not in self.supported_frameworks:
-            raise ValueError(
-                f"Unsupported framework type: {framework_type}. "
-                f"Supported frameworks are: {list(self.supported_frameworks)}"
-            )
-            
-        # Clone the repository from GitHub using the provided repo name, owner.
+        logger.info(f"Deployment configuration prepared for {deploy.owner}/{deploy.repo_name}")
+
+        # Clone the repository
         try:
-            # Validate owner and repo_name
             if not re.match(r'^[a-zA-Z0-9\-]+$', deploy.owner) or not re.match(r'^[a-zA-Z0-9\-_.]+$', deploy.repo_name):
+                logger.error("Invalid repository owner or name")
                 raise ValueError("Invalid repository owner or name")
                 
+            logger.info(f"Cloning repository: {deploy.owner}/{deploy.repo_name}")
             clone_data = await self.git_repository_service.clone_repository(
                owner=deploy.owner,
                repo_name=deploy.repo_name,
                access_token=access_token,
             )
             if "error" in clone_data:
+                logger.error(f"Repository clone failed: {clone_data['error']}")
                 raise ValueError(clone_data["error"])
                 
-            # Handle case where root_folder_path starts with a slash
             root_path = deploy.root_folder_path.lstrip('/') if deploy.root_folder_path else ""
             
-            # Validate root_path
             if not self._validate_path(root_path):
+                logger.error("Invalid root folder path")
                 raise ValueError("Invalid root folder path")
                 
             deploy_data["absolute_path"] = os.path.join(clone_data["path"], root_path)
             
-            # Copy all files from pipeline_path to absolute_path
+            # Copy pipeline files
             pipeline_source = os.path.join(self.project_root, deploy_data["pipeline_path"])
+            logger.info(f"Copying pipeline files from {pipeline_source}")
             
-            # Get list of all files in pipeline directory
             pipeline_files = os.listdir(pipeline_source)
-            
-            # Copy each file from pipeline directory to absolute path
             for file in pipeline_files:
                 source_path = os.path.join(pipeline_source, file)
                 dest_path = os.path.join(deploy_data["absolute_path"], file)
                 
-                # Copy file or directory if it doesn't exist
                 if not os.path.exists(dest_path):
                     if os.path.isfile(source_path):
                         shutil.copy(source_path, dest_path)
                     else:
                         shutil.copytree(source_path, dest_path)
 
-            # copy terraform files from app/Pipelines/Common/Terraform to absolute_path
+            # Copy terraform files
             terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform")
             terraform_dest = os.path.join(deploy_data["absolute_path"], "terraform")
             
-            # Check if terraform folder exists and remove it
             if os.path.exists(terraform_dest):
                 shutil.rmtree(terraform_dest)
             shutil.copytree(terraform_path, terraform_dest)
-            # create .env file in absolute_path based on deploy_data.environment_variables
-            with open(os.path.join(deploy_data["absolute_path"], ".env"), "w") as f:
+            
+            # Create .env file
+            env_path = os.path.join(deploy_data["absolute_path"], ".env")
+            logger.info(f"Creating environment file at {env_path}")
+            with open(env_path, "w") as f:
                 for key, value in deploy_data["environment_variables"].items():
                     f.write(f"{key}={value}\n")
  
         except Exception as e:
+            logger.error(f"Error during repository setup: {str(e)}")
             raise ValueError(f"Error cloning repository: {str(e)}")
 
         # Initialize Terraform
         try:
+            logger.info("Initializing Terraform configuration")
             tf_vars = {
                 "user_github_id": deploy_data["user_github_id"],
                 "aws_access_key": aws_user.aws_access_key_id,
@@ -241,28 +252,29 @@ class DeployService:
                 "aws_region": os.environ.get('AWS_DEFAULT_REGION'),
                 "source_branch": getattr(deploy, 'branch_name', 'main')
             }
-            # Filter out None values from tf_vars to prevent issues with Terraform
             tf_vars = {k: v for k, v in tf_vars.items() if v is not None}
 
             tf_working_dir = os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster")
             tf = Terraform(working_dir=tf_working_dir)
             
-            # Run setup_backend.sh if it exists - ensure it has execute permissions
+            # Run setup_backend.sh
             setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
             if os.path.exists(setup_script_path):
-                # Ensure execute permission
+                logger.info("Running setup_backend.sh script")
                 os.chmod(setup_script_path, 0o755)
-                subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], cwd=tf_working_dir, capture_output=True, text=True, check=True)
+                subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
+                             cwd=tf_working_dir, capture_output=True, text=True, check=True)
 
-            print("Applying Terraform...")
+            logger.info("Applying Terraform configuration")
             return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
             if return_code != 0:
-                print(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
+                logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
                 raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
             
-            print("Getting Terraform output...")
+            logger.info("Getting Terraform output")
             output = tf.output(json=True)
             if not output:
+                logger.error("Terraform output is empty")
                 raise ValueError("Terraform output is empty")
 
             dns_load_balancer = output.get("load_balancer_dns", {}).get("value")
@@ -272,11 +284,14 @@ class DeployService:
                 missing_outputs = []
                 if not dns_load_balancer: missing_outputs.append("load_balancer_dns")
                 if not ecr_repo_url: missing_outputs.append("ecr_repo_url")
-                raise ValueError(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}. Full output: {output}")
+                logger.error(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
+                raise ValueError(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
 
         except subprocess.CalledProcessError as e:
+            logger.error(f"Error running setup_backend.sh: {e.stderr}")
             raise ValueError(f"Error running setup_backend.sh: {e.stderr}")
         except Exception as e:
+            logger.error(f"Error initializing or applying Terraform: {str(e)}")
             raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
         
         deploy_data["load_balancer_url"] = dns_load_balancer
@@ -287,16 +302,15 @@ class DeployService:
             codebuild_project_name = f"{user.github_id}-{deploy.repo_name}-codebuild"
             source_branch_for_codebuild = getattr(deploy, 'branch_name', 'main')
 
-            # Read buildspec content
-            buildspec_file_path = os.path.join(deploy_data["absolute_path"], "buildspec.yml") # Assuming buildspec.yml is copied here
+            logger.info(f"Starting CodeBuild project: {codebuild_project_name}")
+            buildspec_file_path = os.path.join(deploy_data["absolute_path"], "buildspec.yml")
             buildspec_content = ""
             if os.path.exists(buildspec_file_path):
                 with open(buildspec_file_path, "r") as f:
                     buildspec_content = f.read()
             else:
-                print(f"Warning: buildspec.yml not found at {buildspec_file_path}. CodeBuild might use project default.")
+                logger.warning(f"buildspec.yml not found at {buildspec_file_path}. CodeBuild might use project default.")
 
-            print(f"Starting CodeBuild project:  for E{codebuild_project_name}CR repo: {ecr_repo_url} on branch {source_branch_for_codebuild}")
             build_response = self.codebuild_service.start_build(
                 project_name=codebuild_project_name,
                 ecr_repo_url=ecr_repo_url,
@@ -305,18 +319,12 @@ class DeployService:
                 port=deploy_data["port"],
                 entry_point=deploy_data["entry_point"]
             )
-            print(f"CodeBuild started: {build_response}")
+            logger.info(f"CodeBuild started successfully: {build_response}")
             deploy_data["codebuild_build_id"] = build_response.get('build', {}).get('id')
 
         except Exception as e:
-            print(f"Error starting CodeBuild build: {str(e)}")
-            # Depending on requirements, you might want to raise an error or handle it differently
-            # For now, just printing the error and an empty build ID will be stored.
+            logger.error(f"Error starting CodeBuild build: {str(e)}")
             deploy_data["codebuild_build_id"] = None
 
-        print(deploy_data)
-        # Create a new DeployCreateSchema from the deploy data
-        
-        
-        # Create the deploy in the repository
+        logger.info(f"Creating deployment record for {deploy.owner}/{deploy.repo_name}")
         return await self.deploy_repository.create_deploy(deploy_data)
