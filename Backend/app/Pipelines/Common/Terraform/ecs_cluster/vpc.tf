@@ -138,13 +138,13 @@
 # }
 # load balancer
 resource "aws_lb" "load_balancer" {
-  name               = "${var.user_github_id}-${var.repo_name}-lb"
+  name               = "${var.repo_name}"
   internal           = false
   load_balancer_type = "network"
   subnets            = [var.public_subnet_id]
 
   tags = {
-    Name = "${var.user_github_id}-${var.repo_name}-lb"
+    Name = "ecs-alb-${var.repo_name}"
   }
 }
 

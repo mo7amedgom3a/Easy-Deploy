@@ -7,6 +7,7 @@ class Settings:
     DATABASE_URL = os.getenv("CONNECTION_STRING")
     LOCAL_DATABASE_URL = os.getenv("LOCAL_CONNECTION_STRING")
     DATABASE_NAME = os.getenv("DATABASE_NAME")
+    DIR_BASE = os.getenv("DIR_BASE")
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
     REDIRECT_URI = os.getenv("REDIRECT_URI")

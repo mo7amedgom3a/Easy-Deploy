@@ -21,6 +21,7 @@ jobs:
       JWT_ALGORITHM: ${{ secrets.JWT_ALGORITHM }}
       JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
       EXPIRATION_TIME: ${{ secrets.EXPIRATION_TIME }}
+      DIR_BASE: ${{ secrets.DIR_BASE }}
      
       IMAGE_TAG: latest
 
@@ -56,6 +57,7 @@ jobs:
           --build-arg JWT_ALGORITHM=$JWT_ALGORITHM \
           --build-arg JWT_SECRET_KEY=$JWT_SECRET_KEY \
           --build-arg EXPIRATION_TIME=$EXPIRATION_TIME \
+          --build-arg DIR_BASE=$DIR_BASE \
           -t easy-deploy-backend Backend/app
         docker tag easy-deploy-backend $ECR_REPO_URL:latest
         docker push $ECR_REPO_URL:latest

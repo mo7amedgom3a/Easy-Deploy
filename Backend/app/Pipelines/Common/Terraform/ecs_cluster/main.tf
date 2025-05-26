@@ -118,11 +118,18 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
 }
 resource "aws_ecs_cluster_capacity_providers" "ecs_cluster_capacity_providers" {
   cluster_name = aws_ecs_cluster.ecs_cluster.name
-  capacity_providers = [var.aws_ecs_capacity_provider_name]
+  capacity_providers = [aws_ecs_capacity_provider.ecs_capacity_provider.name]
   default_capacity_provider_strategy {
     base              = 1
     weight            = 100
-    capacity_provider = var.aws_ecs_capacity_provider_name
+    capacity_provider = aws_ecs_capacity_provider.ecs_capacity_provider.name
+  }
+  depends_on = [aws_ecs_capacity_provider.ecs_capacity_provider]
+}
+resource "aws_ecs_capacity_provider" "ecs_capacity_provider" {
+  name = var.aws_ecs_capacity_provider_name
+  auto_scaling_group_provider {
+    auto_scaling_group_arn = aws_autoscaling_group.ecs_asg.arn
   }
 }
 # Define the ECS task definition for the service
@@ -139,11 +146,10 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   }
   container_definitions = jsonencode([
     {
-      name      = "${var.user_github_id}-${var.repo_name}-task-definition"
+      name      = var.aws_ecs_task_container_name
       image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
       cpu       = 256
       memory    = 512
-      network_mode = "awsvpc"
       essential = true
       portMappings = [
         {
@@ -167,8 +173,9 @@ resource "aws_ecs_service" "ecs_service" {
     subnets         = [var.private_subnet_id]
     security_groups = [aws_security_group.security_group.id]
   }
+
   capacity_provider_strategy {
-    capacity_provider = var.aws_ecs_capacity_provider_name
+    capacity_provider = aws_ecs_capacity_provider.ecs_capacity_provider.name
     weight           = 100
   }
 
@@ -188,6 +195,7 @@ resource "aws_ecs_service" "ecs_service" {
   }
   depends_on = [
     aws_lb_listener.ecs_nlb_listener,
-    aws_lb_target_group.ecs_tg
+    aws_lb_target_group.ecs_tg,
+    aws_ecs_capacity_provider.ecs_capacity_provider
   ]
 }

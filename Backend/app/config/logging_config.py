@@ -50,10 +50,6 @@ def setup_logging():
     root_logger.addHandler(error_logs_handler)
     root_logger.addHandler(console_handler)
 
-    # Capture stdout and stderr
-    sys.stdout = LoggerWriter(root_logger.info)
-    sys.stderr = LoggerWriter(root_logger.error)
-
     # Set specific logger levels
     logging.getLogger('uvicorn').setLevel(logging.INFO)
     logging.getLogger('uvicorn.access').setLevel(logging.INFO)
@@ -80,6 +76,7 @@ class LoggerWriter:
     def __init__(self, log_function):
         self.log_function = log_function
         self.buffer = []
+        self.isatty = lambda: False  # Add isatty method to fix FastAPI CLI compatibility
 
     def write(self, message):
         if message and not message.isspace():

@@ -36,7 +36,7 @@ class AWSCodeBuild:
                 },
                 {
                     'name': 'IMAGE_TAG',
-                    'value': image_tag
+                    'value': image_tag or 'latest'
                 }
             ]
 
@@ -52,7 +52,11 @@ class AWSCodeBuild:
                 del start_build_params['buildspecOverride']
 
             logger.info(f"Starting CodeBuild project: {project_name}")
-            response = self.codebuild.start_build(**start_build_params)
+            try:    
+                response = self.codebuild.start_build(**start_build_params)
+            except Exception as e:
+                logger.error(f"Failed to start CodeBuild: {str(e)}")
+                raise Exception(f"CodeBuild start failed: {str(e)}")
             
             build_id = response.get('build', {}).get('id')
             logger.info(f"Build started with ID: {build_id}")
