@@ -105,6 +105,7 @@ resource "aws_iam_role_policy" "ecs_instance_inline_policy" {
     ]
   })
 }
+
 # Attach ECS Instance policy
 resource "aws_iam_role_policy_attachment" "ecs_instance_policy_attachment" {
   role       = aws_iam_role.aws_ecs_instance_role.name
@@ -115,14 +116,23 @@ resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
-
+resource "aws_ecs_cluster_capacity_providers" "ecs_cluster_capacity_providers" {
+  cluster_name = aws_ecs_cluster.ecs_cluster.name
+  capacity_providers = [var.aws_ecs_capacity_provider_name]
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = var.aws_ecs_capacity_provider_name
+  }
+}
 # Define the ECS task definition for the service
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family             = var.ecs_task_family
-  network_mode       = var.ecs_task_network_mode
+  network_mode       = "awsvpc"
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   cpu                = 256
+  memory             = 512
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -163,6 +173,9 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   force_new_deployment = true
+  placement_constraints {
+    type = "distinctInstance"
+  }
 
   triggers = {
     redeployment = timestamp()
