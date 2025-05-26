@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import os
+import sys
 from pathlib import Path
 
 def setup_logging():
@@ -40,7 +41,7 @@ def setup_logging():
     error_logs_handler.setFormatter(file_formatter)
 
     # Console handler
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(console_formatter)
 
@@ -48,6 +49,10 @@ def setup_logging():
     root_logger.addHandler(all_logs_handler)
     root_logger.addHandler(error_logs_handler)
     root_logger.addHandler(console_handler)
+
+    # Capture stdout and stderr
+    sys.stdout = LoggerWriter(root_logger.info)
+    sys.stderr = LoggerWriter(root_logger.error)
 
     # Set specific logger levels
     logging.getLogger('uvicorn').setLevel(logging.INFO)
@@ -68,4 +73,17 @@ def setup_logging():
         logger.setLevel(logging.INFO)
         logger.propagate = True  # Propagate logs to root logger
 
-    return loggers 
+    return loggers
+
+class LoggerWriter:
+    """Helper class to redirect stdout/stderr to logger."""
+    def __init__(self, log_function):
+        self.log_function = log_function
+        self.buffer = []
+
+    def write(self, message):
+        if message and not message.isspace():
+            self.log_function(message.rstrip())
+
+    def flush(self):
+        pass

@@ -157,6 +157,10 @@ resource "aws_ecs_service" "ecs_service" {
     subnets         = [var.private_subnet_id]
     security_groups = [aws_security_group.security_group.id]
   }
+  capacity_provider_strategy {
+    capacity_provider = var.aws_ecs_capacity_provider_name
+    weight           = 100
+  }
 
   force_new_deployment = true
 

@@ -108,7 +108,7 @@ resource "aws_iam_role_policy_attachment" "ecs_instance_ssm_policy" {
 }
 
 resource "aws_iam_instance_profile" "aws_ecs_instance_profile" {
-  name_prefix = "ecs-instance-profile-"
+  name_prefix = "ecs-instance-profile-easy-deploy"
   role = aws_iam_role.aws_ecs_instance_role.name
 }
 
@@ -129,7 +129,7 @@ resource "aws_ecs_capacity_provider" "aws_ecs_capacity_provider" {
 
 # IAM Role for ECS Task Execution
 resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecs-task-execution-role"
+  name = "ecs-task-execution-role-${var.repo_name}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -147,7 +147,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 
 # Add inline policy for CodeBuild, ECR, and CloudWatch Logs permissions
 resource "aws_iam_role_policy" "ecs_task_codebuild_policy" {
-  name = "ecs-task-codebuild-policy"
+  name = "ecs-task-codebuild-policy-${var.repo_name}"
   role = aws_iam_role.ecs_task_execution_role.id
 
   policy = jsonencode({
@@ -187,11 +187,11 @@ resource "aws_ecs_cluster_capacity_providers" "example" {
 # Define the ECS task definition for the service
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family             = var.ecs_task_family
-  network_mode       = var.ecs_task_network_mode
+  network_mode       = "awsvpc"
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  cpu                = 512
-  memory             = 1024
+  cpu                = 256
+  memory             = 512
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -200,8 +200,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     {
       name      = var.aws_ecs_task_container_name
       image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
-      cpu       = 512
-      memory    = 1024
+      cpu       = 256
+      memory    = 512
       essential = true
       portMappings = [
         {
@@ -217,6 +217,15 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           readOnly      = false
         }
       ]
+     
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_log_group.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
     }
   ])
   volume {
@@ -232,33 +241,108 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   }
 }
 
-# Define the ECS service that will run the task
+# EventBridge rule for ECR image push events
+resource "aws_cloudwatch_event_rule" "ecr_push_event" {
+  name        = "ecr-push-event-${var.repo_name}"
+  description = "Trigger ECS service update when new image is pushed to ECR"
+
+  event_pattern = jsonencode({
+    source      = ["aws.ecr"]
+    detail-type = ["ECR Image Action"]
+    detail = {
+      action-type     = ["PUSH"]
+      repository-name = [aws_ecr_repository.app_repo.name]
+      image-tag       = ["latest"]
+    }
+  })
+}
+
+# EventBridge target for ECS service update
+resource "aws_cloudwatch_event_target" "ecs_service_update" {
+  rule      = aws_cloudwatch_event_rule.ecr_push_event.name
+  target_id = "UpdateECSService"
+  arn       = aws_ecs_cluster.ecs_cluster.arn
+  role_arn  = aws_iam_role.eventbridge_role.arn
+
+  ecs_target {
+    task_count          = 1
+    task_definition_arn = aws_ecs_task_definition.ecs_task_definition.arn
+    launch_type         = "EC2"
+  }
+}
+
+# IAM role for EventBridge to update ECS service
+resource "aws_iam_role" "eventbridge_role" {
+  name = "eventbridge-ecs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "events.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM policy for EventBridge to update ECS service
+resource "aws_iam_role_policy" "eventbridge_ecs_policy" {
+  name = "eventbridge-ecs-policy"
+  role = aws_iam_role.eventbridge_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:RunTask",
+          "ecs:StopTask",
+          "ecs:DescribeTasks",
+          "ecs:ListTasks",
+          "ecs:DescribeServices",
+          "ecs:UpdateService"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Update ECS service to enable automatic deployment
 resource "aws_ecs_service" "ecs_service" {
   name            = var.aws_ecs_service_name
   cluster         = aws_ecs_cluster.ecs_cluster.id
   task_definition = aws_ecs_task_definition.ecs_task_definition.arn
   desired_count   = 2
   
+  capacity_provider_strategy {
+    capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
+    weight           = 100
+  }
+  
   network_configuration {
     subnets          = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
     security_groups  = [aws_security_group.ecs_tasks_sg.id]
-   
   }
-  force_new_deployment = true
 
-  triggers = {
-    redeployment = timestamp()
-  }
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     container_name   = var.aws_ecs_task_container_name
     container_port   = var.aws_ecs_task_container_port
   }
-
-  deployment_controller {
-    type = "ECS"
+  force_new_deployment = true
+  placement_constraints {
+    type = "distinctInstance"
   }
 
+  triggers = {
+   redeployment = timestamp()
+ }
   depends_on = [
     aws_lb_listener.ecs_alb_listener,
     aws_iam_role_policy_attachment.ecs_task_execution_role_policy

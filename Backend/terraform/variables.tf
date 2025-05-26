@@ -18,7 +18,7 @@ variable "private_key_path" {
 variable "aws_ecs_cluster_name" {
   description = "Name of the ECS cluster"
   type        = string
-  default     = "ecs-cluster"
+  default     = "ecs-cluster-easy-deploy"
   
 }
 variable "aws_target_group" {
@@ -35,7 +35,7 @@ variable "aws_lb_name" {
 variable "aws_ecs_instance_profile_name" {
   description = "Name of the ECS instance profile"
   type        = string
-  default     = "ecs-instance-profile"
+  default     = "ecs-instance-profile-easy-deploy"
   
 }
 variable "aws_security_group_name" {
@@ -46,19 +46,19 @@ variable "aws_security_group_name" {
 variable "aws_ecs_service_name" {
   description = "Name of the ECS service"
   type        = string
-  default     = "ecs-service"
+  default     = "ecs-service-easy-deploy"
 }
 
 variable "ecs_instance_role_name" {
   description = "Name of the ECS instance role"
   type        = string
-  default     = "ecs-instance-role"
+  default     = "ecs-instance-role-easy-deploy"
 }
 
 variable "aws_ecs_capacity_provider_name" {
   description = "Name of the ECS capacity provider"
   type        = string
-  default     = "custom-capacity-provider"
+  default     = "custom-capacity-provider-easy-deploy"
 }
 
 variable "vpc_cidr" {
@@ -80,7 +80,7 @@ variable "repo_name" {
 variable "ecs_task_family" {
   description = "Family name for the ECS task definition"
   type        = string
-  default     = "my-ecs-task"
+  default     = "easy-deploy-task"
 }
 
 variable "ecs_task_network_mode" {

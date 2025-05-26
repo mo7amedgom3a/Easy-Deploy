@@ -4,9 +4,7 @@ output "vpc_id" {
 output "account_id" {
   value = data.aws_caller_identity.current.account_id
 }
-output "nat_ip" {
-  value = aws_eip.nat_eip.public_ip
-}
+
 output "ecr_repo_url" {
   value = aws_ecr_repository.app_repo.repository_url
 }
