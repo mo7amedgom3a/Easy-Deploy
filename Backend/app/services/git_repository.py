@@ -11,7 +11,7 @@ from httpx import AsyncClient, HTTPStatusError
 from repositories.git_repository import GitRepository
 from schemas.repository import RepositorySchema
 from services.user import UserService
-from app.config.settings import Settings
+from config.settings import Settings
 logger = logging.getLogger('git')
 
 class GitRepositoryService:
