@@ -3,7 +3,7 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.openapi.utils import get_openapi
-from routers import user, auth, git_repositories, aws_user, deploy
+from routers import user, auth, git_repositories, aws_user, deploy, monitoring
 import os
 from dotenv import load_dotenv
 from dependencies.database_connection import DatabaseConnection
@@ -71,6 +71,7 @@ def root():
 # Routers that require authentication
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(aws_user.router, dependencies=[Depends(oauth2_scheme)])
+app.include_router(monitoring.router, dependencies=[Depends(oauth2_scheme)])
 
 # Routers that do not require authentication
 app.include_router(auth.router)
@@ -78,4 +79,6 @@ app.include_router(git_repositories.router)
 app.include_router(deploy.router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host=os.getenv("HOST"), port=int(os.getenv("PORT")))
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

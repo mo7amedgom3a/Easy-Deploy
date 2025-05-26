@@ -2,6 +2,7 @@ import boto3
 import os
 from dotenv import load_dotenv
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ class AWSCodeBuild:
         self.codebuild = boto3.client('codebuild')
         load_dotenv()
 
-    def start_build(self, project_name: str, ecr_repo_url: str, source_version: str, buildspec_content: str, port: int, entry_point: str):
+    def start_build(self, project_name: str, ecr_repo_url: str, source_version: str, buildspec_content: str, port: int, entry_point: str, image_tag: Optional[str] = None):
         try:
             environment_variables_override = [
                 {
@@ -35,7 +36,7 @@ class AWSCodeBuild:
                 },
                 {
                     'name': 'IMAGE_TAG',
-                    'value': source_version or 'latest'
+                    'value': image_tag
                 }
             ]
 

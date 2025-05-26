@@ -190,7 +190,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   network_mode       = var.ecs_task_network_mode
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  cpu                = 256
+  cpu                = 512
   memory             = 1024
   runtime_platform {
     operating_system_family = "LINUX"
@@ -200,7 +200,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     {
       name      = var.aws_ecs_task_container_name
       image     = "${aws_ecr_repository.app_repo.repository_url}:${var.image_tag}"
-      cpu       = 256
+      cpu       = 512
       memory    = 1024
       network_mode = "awsvpc"
       essential = true
@@ -218,7 +218,6 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           readOnly      = false
         }
       ]
-     
     }
   ])
   volume {
@@ -233,6 +232,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     }
   }
 }
+
 # Define the ECS service that will run the task
 resource "aws_ecs_service" "ecs_service" {
   name            = var.aws_ecs_service_name
@@ -245,18 +245,15 @@ resource "aws_ecs_service" "ecs_service" {
     security_groups = [aws_security_group.ecs_tasks_sg.id]   
   }
   
-  deployment_circuit_breaker {
-    enable   = true
-    rollback = true
-  }
 
   deployment_controller {
     type = "ECS"
   }
-
-  placement_constraints {
-    type = "distinctInstance"
+  triggers = {
+    redeployment = timestamp()
   }
+  # Force new deployment when task definition changes
+  force_new_deployment = true
 
   capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name

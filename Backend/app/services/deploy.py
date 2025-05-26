@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 from typing import Dict
 import logging
+from datetime import datetime
 
 from fastapi import HTTPException
 from python_terraform import Terraform
@@ -126,6 +127,9 @@ class DeployService:
     async def create_deploy(self, deploy: DeployCreateSchema, access_token: str, user: UserSchema) -> Deploy:
         """Create a new deployment record with default or overridden configuration."""
         logger.info(f"Starting deployment process for repository: {deploy.owner}/{deploy.repo_name}")
+        
+        # Generate unique tag for this deployment
+        deployment_tag = "latest"
         
         if not access_token or not isinstance(access_token, str):
             logger.error("Invalid access token provided")
@@ -317,14 +321,17 @@ class DeployService:
                 source_version=source_branch_for_codebuild,
                 buildspec_content=buildspec_content,
                 port=deploy_data["port"],
-                entry_point=deploy_data["entry_point"]
+                entry_point=deploy_data["entry_point"],
+                image_tag=deployment_tag  # Pass the unique tag to CodeBuild
             )
             logger.info(f"CodeBuild started successfully: {build_response}")
             deploy_data["codebuild_build_id"] = build_response.get('build', {}).get('id')
+            deploy_data["image_tag"] = deployment_tag  # Store the tag in deploy data
 
         except Exception as e:
             logger.error(f"Error starting CodeBuild build: {str(e)}")
             deploy_data["codebuild_build_id"] = None
+            deploy_data["image_tag"] = deployment_tag  # Still store the tag even if build fails
 
         logger.info(f"Creating deployment record for {deploy.owner}/{deploy.repo_name}")
         return await self.deploy_repository.create_deploy(deploy_data)

@@ -59,3 +59,7 @@ jobs:
           -t easy-deploy-backend Backend/app
         docker tag easy-deploy-backend:latest $ECR_REPO_URL:$IMAGE_TAG
         docker push $ECR_REPO_URL:$IMAGE_TAG
+
+        # force a new deployment of the ECS service
+        aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+      
