@@ -199,10 +199,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   container_definitions = jsonencode([
     {
       name      = var.aws_ecs_task_container_name
-      image     = "${aws_ecr_repository.app_repo.repository_url}:${var.image_tag}"
+      image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
       cpu       = 512
       memory    = 1024
-      network_mode = "awsvpc"
       essential = true
       portMappings = [
         {
@@ -241,30 +240,55 @@ resource "aws_ecs_service" "ecs_service" {
   desired_count   = 2
   
   network_configuration {
-    subnets         = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
-    security_groups = [aws_security_group.ecs_tasks_sg.id]   
+    subnets          = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
+    security_groups  = [aws_security_group.ecs_tasks_sg.id]
+   
   }
-  
+  force_new_deployment = true
 
-  deployment_controller {
-    type = "ECS"
-  }
   triggers = {
     redeployment = timestamp()
   }
-  # Force new deployment when task definition changes
-  force_new_deployment = true
-
-  capacity_provider_strategy {
-    capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
-    weight            = 100
-  }
-
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     container_name   = var.aws_ecs_task_container_name
     container_port   = var.aws_ecs_task_container_port
   }
 
-  depends_on = [aws_autoscaling_group.ecs_asg]
+  deployment_controller {
+    type = "ECS"
+  }
+
+  depends_on = [
+    aws_lb_listener.ecs_alb_listener,
+    aws_iam_role_policy_attachment.ecs_task_execution_role_policy
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "ecs_log_group" {
+  name              = "/ecs/${var.ecs_task_family}"
+  retention_in_days = 30
+}
+
+resource "aws_iam_role_policy" "ecs_task_execution_role_policy" {
+  name = "ecs-task-execution-role-policy"
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
 }

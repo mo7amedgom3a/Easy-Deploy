@@ -49,6 +49,7 @@ resource "aws_launch_template" "ecs_lt" {
   
   
 }
+# ecs instance connect endpoints  
 resource "aws_ec2_instance_connect_endpoint" "ecs_instance_connect_endpoint" {
   subnet_id = aws_subnet.private_subnet1.id
   security_group_ids = [aws_security_group.eic_endpoint_sg.id]
@@ -57,6 +58,7 @@ resource "aws_ec2_instance_connect_endpoint" "ecs_instance_connect_endpoint" {
     Name = "eic-endpoint"
   }
 }
+
 resource "aws_autoscaling_group" "ecs_asg" {
   vpc_zone_identifier = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
   desired_capacity    = 2

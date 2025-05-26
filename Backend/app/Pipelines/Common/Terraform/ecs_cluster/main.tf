@@ -129,7 +129,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   }
   container_definitions = jsonencode([
     {
-      name      = var.aws_ecs_task_container_name
+      name      = "${var.user_github_id}-${var.repo_name}-task-definition"
       image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
       cpu       = 256
       memory    = 512

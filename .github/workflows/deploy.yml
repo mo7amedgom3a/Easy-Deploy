@@ -57,9 +57,8 @@ jobs:
           --build-arg JWT_SECRET_KEY=$JWT_SECRET_KEY \
           --build-arg EXPIRATION_TIME=$EXPIRATION_TIME \
           -t easy-deploy-backend Backend/app
-        docker tag easy-deploy-backend:latest $ECR_REPO_URL:$IMAGE_TAG
-        docker push $ECR_REPO_URL:$IMAGE_TAG
+        docker tag easy-deploy-backend $ECR_REPO_URL:latest
+        docker push $ECR_REPO_URL:latest
 
         # force a new deployment of the ECS service
         aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
-      
