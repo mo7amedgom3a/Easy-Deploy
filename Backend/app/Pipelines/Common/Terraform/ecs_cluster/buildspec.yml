@@ -4,6 +4,8 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
+      - cd $ABSOLUTE_PATH
+      - echo "we inside the absolute path"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - REPOSITORY_URI=$ECR_REPO_URL
       - IMAGE_TAG=latest
@@ -13,10 +15,6 @@ phases:
       - ls -la
       - echo "Listing files in EFS mount:"
       - ls -la $ABSOLUTE_PATH
-      - echo "Copying repository from EFS..."
-      - cp -r $ABSOLUTE_PATH .
-      - echo "Listing files after copy:"
-      - ls -la
   build:
     commands:
       - echo Building the Docker image...

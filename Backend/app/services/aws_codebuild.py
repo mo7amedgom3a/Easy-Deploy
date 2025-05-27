@@ -8,8 +8,17 @@ logger = logging.getLogger(__name__)
 
 class AWSCodeBuild:
     def __init__(self):
-        self.codebuild = boto3.client('codebuild')
         load_dotenv()
+        aws_region = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+        if not aws_region:
+            raise ValueError("AWS_DEFAULT_REGION environment variable is not set")
+        
+        self.codebuild = boto3.client(
+            'codebuild',
+            region_name=aws_region,
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+        )
 
     def start_build(self, project_name: str, ecr_repo_url: str, source_version: str, buildspec_content: str, port: int, entry_point: str, image_tag: Optional[str] = None, github_username: Optional[str] = None, repo_name: Optional[str] = None, absolute_path: Optional[str] = None):
         try:
@@ -20,7 +29,7 @@ class AWSCodeBuild:
                 },
                 {
                     'name': 'AWS_DEFAULT_REGION',
-                    'value': os.getenv('AWS_DEFAULT_REGION')
+                    'value': os.getenv('AWS_DEFAULT_REGION') or 'us-east-1'
                 },
                 {
                     'name': 'ECR_REPO_URL',
@@ -58,12 +67,16 @@ class AWSCodeBuild:
                 'sourceVersion': source_version,
                 'buildspecOverride': buildspec_content
             }
+            # Add buildspec override if provided
+            if buildspec_content:
+                start_build_params['buildspecOverride'] = buildspec_content
 
             # Remove keys with None values
             if not buildspec_content:
                 del start_build_params['buildspecOverride']
 
             logger.info(f"Starting CodeBuild project: {project_name}")
+            logger.debug(f"Build parameters: {start_build_params}")
             try:    
                 response = self.codebuild.start_build(**start_build_params)
                 print(response)

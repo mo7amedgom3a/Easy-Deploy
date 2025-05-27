@@ -34,8 +34,33 @@ resource "aws_codebuild_project" "main" {
       type  = "PLAINTEXT"
     }
     environment_variable {
+      name  = "AWS_ACCOUNT_ID"
+      value = data.aws_caller_identity.current.account_id
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "AWS_DEFAULT_REGION" 
+      value = var.aws_region
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
       name  = "ECR_REPO_URL"
       value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.repo_name}-${var.user_github_id}"
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "PORT"
+      value = tostring(var.ecs_task_container_port)
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "ENTRY_POINT"
+      value = "app.py"
+      type  = "PLAINTEXT" 
+    }
+    environment_variable {
+      name  = "IMAGE_TAG"
+      value = "latest"
       type  = "PLAINTEXT"
     }
     environment_variable {
@@ -50,7 +75,7 @@ resource "aws_codebuild_project" "main" {
     }
     environment_variable {
       name  = "ABSOLUTE_PATH"
-      value = "/mnt/repos/${var.user_github_id}/${var.repo_name}"
+      value = var.absolute_path
       type  = "PLAINTEXT"
     }
   }
@@ -92,7 +117,7 @@ resource "aws_codebuild_project" "main" {
     type = "EFS"
     location = "${var.efs_id}.efs.${var.aws_region}.amazonaws.com:/"
     mount_point = "/mnt/repos"
-    identifier = "efs-repo-storage"
+    identifier = "github-repo-efs"
     mount_options = "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
   }
 

@@ -224,8 +224,8 @@ class DeployService:
                         shutil.copytree(source_path, dest_path)
 
             # Copy terraform files
-            terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform")
-            terraform_dest = os.path.join(deploy_data["absolute_path"], "terraform")
+            terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform", "ecs_cluster")
+            terraform_dest = os.path.join(deploy_data["absolute_path"])
             
             if os.path.exists(terraform_dest):
                 shutil.rmtree(terraform_dest)
@@ -308,7 +308,7 @@ class DeployService:
             source_branch_for_codebuild = getattr(deploy, 'branch_name', 'main')
 
             logger.info(f"Starting CodeBuild project: {codebuild_project_name}")
-            buildspec_file_path = os.path.join(deploy_data["absolute_path"], "buildspec.yml")
+            buildspec_file_path = os.path.join(deploy_data["absolute_path"],"ecs_cluster","buildspec.yml")
             buildspec_content = ""
             if os.path.exists(buildspec_file_path):
                 with open(buildspec_file_path, "r") as f:
