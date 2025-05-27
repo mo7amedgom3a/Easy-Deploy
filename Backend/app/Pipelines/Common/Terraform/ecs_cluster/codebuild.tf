@@ -34,18 +34,31 @@ resource "aws_codebuild_project" "main" {
       type  = "PLAINTEXT"
     }
     environment_variable {
-      name  = "ECR_REPO_URL" // Placeholder, will be overridden by start_build
-      value = "placeholder_ecr_url"
+      name  = "ECR_REPO_URL"
+      value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.repo_name}-${var.user_github_id}"
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "GITHUB_USERNAME"
+      value = var.user_github_id
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "REPO_NAME"
+      value = var.repo_name
+      type  = "PLAINTEXT"
+    }
+    environment_variable {
+      name  = "ABSOLUTE_PATH"
+      value = "/mnt/repos/${var.user_github_id}/${var.repo_name}"
       type  = "PLAINTEXT"
     }
   }
 
   source {
-    type                = "GITHUB"
-    location            = "https://github.com/${var.owner}/${var.repo_name}.git"
-    git_clone_depth     = 1
-    report_build_status = true
-    // buildspec         = "buildspec.yml" // We will use buildspecOverride from DeployService
+    type            = "NO_SOURCE"
+    buildspec       = file("buildspec.yml")
+   
   }
 
   // If you use webhooks, you might configure them here, or manage GitHub App integration
@@ -67,6 +80,20 @@ resource "aws_codebuild_project" "main" {
       status   = "DISABLED" // Or enable if you want logs also in S3
       # location = "${aws_s3_bucket.codebuild_artifacts.id}/build-logs"
     }
+  }
+
+  vpc_config {
+    vpc_id             = var.vpc_id
+    subnets            = [var.private_subnet_id]
+    security_group_ids = [aws_security_group.codebuild_sg.id]
+  }
+
+  file_system_locations {
+    type = "EFS"
+    location = "${var.efs_id}.efs.${var.aws_region}.amazonaws.com:/"
+    mount_point = "/mnt/repos"
+    identifier = "efs-repo-storage"
+    mount_options = "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
   }
 
   tags = {

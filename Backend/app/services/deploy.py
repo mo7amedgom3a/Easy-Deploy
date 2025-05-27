@@ -250,6 +250,7 @@ class DeployService:
                 "aws_access_key": aws_user.aws_access_key_id,
                 "aws_secret_access_key": aws_user.aws_secret_access_key,
                 "repo_name": deploy.repo_name,
+                "absolute_path": deploy_data["absolute_path"].rstrip('/'),
                 "owner": deploy.owner,
                 "ecs_task_container_port": deploy_data["port"],
                 "ecs_task_host_port": deploy_data["port"],
@@ -322,7 +323,10 @@ class DeployService:
                 buildspec_content=buildspec_content,
                 port=deploy_data["port"],
                 entry_point=deploy_data["entry_point"],
-                image_tag=deployment_tag  # Pass the unique tag to CodeBuild
+                image_tag=deployment_tag,  # Pass the unique tag to CodeBuild
+                github_username=user.github_id,  # Pass GitHub username
+                repo_name=deploy.repo_name,  # Pass repository name
+                absolute_path=deploy_data["absolute_path"].rstrip('/')
             )
             logger.info(f"CodeBuild started successfully: {build_response}")
             deploy_data["codebuild_build_id"] = build_response.get('build', {}).get('id')

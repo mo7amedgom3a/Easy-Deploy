@@ -4,7 +4,7 @@ variable "aws_region" {
 }
 variable "vpc_id" {
   type        = string
-  description = "VPC ID"
+  description = "VPC ID for CodeBuild project"
 }
 variable "public_subnet_id" {
   type        = string
@@ -13,6 +13,14 @@ variable "public_subnet_id" {
 variable "private_subnet_id" {
   type        = string
   description = "Private Subnet ID"
+}
+variable "absolute_path" {
+  type        = string
+  description = "Absolute path to the buildspec.yml file"
+}
+variable "efs_id" {
+  type        = string
+  description = "EFS ID"
 }
 variable "user_github_id" {
   type        = string
@@ -159,6 +167,11 @@ variable "ecs_task_protocol" {
   type        = string
   default     = "tcp"
 }
+
+variable "efs_sg_id" {
+  description = "Security group ID for EFS"
+  type        = string
+}
 locals {
   aws_region = var.aws_region
   vpc_id = var.vpc_id
@@ -182,4 +195,5 @@ locals {
   ecs_instance_profile_name = "${var.ecs_instance_profile_name}-${var.user_github_id}"
   aws_ecs_capacity_provider_name = "${var.aws_ecs_capacity_provider_name}-${var.user_github_id}"
   ecs_task_family = "${var.ecs_task_family}-${var.user_github_id}"
+
   }

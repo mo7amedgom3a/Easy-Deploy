@@ -147,7 +147,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 
 # Add inline policy for CodeBuild, ECR, and CloudWatch Logs permissions
 resource "aws_iam_role_policy" "ecs_task_codebuild_policy" {
-  name = "ecs-task-codebuild-policy-${var.repo_name}"
+  name = "ecs-task-codebuild-policy"
   role = aws_iam_role.ecs_task_execution_role.id
 
   policy = jsonencode({

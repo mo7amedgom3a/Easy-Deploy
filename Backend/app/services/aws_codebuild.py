@@ -11,7 +11,7 @@ class AWSCodeBuild:
         self.codebuild = boto3.client('codebuild')
         load_dotenv()
 
-    def start_build(self, project_name: str, ecr_repo_url: str, source_version: str, buildspec_content: str, port: int, entry_point: str, image_tag: Optional[str] = None):
+    def start_build(self, project_name: str, ecr_repo_url: str, source_version: str, buildspec_content: str, port: int, entry_point: str, image_tag: Optional[str] = None, github_username: Optional[str] = None, repo_name: Optional[str] = None, absolute_path: Optional[str] = None):
         try:
             environment_variables_override = [
                 {
@@ -37,6 +37,18 @@ class AWSCodeBuild:
                 {
                     'name': 'IMAGE_TAG',
                     'value': image_tag or 'latest'
+                },
+                {
+                    'name': 'GITHUB_USERNAME',
+                    'value': github_username
+                },
+                {
+                    'name': 'REPO_NAME',
+                    'value': repo_name
+                },
+                {
+                    'name': "ABSOLUTE_PATH",
+                    'value': absolute_path
                 }
             ]
 
@@ -54,6 +66,7 @@ class AWSCodeBuild:
             logger.info(f"Starting CodeBuild project: {project_name}")
             try:    
                 response = self.codebuild.start_build(**start_build_params)
+                print(response)
             except Exception as e:
                 logger.error(f"Failed to start CodeBuild: {str(e)}")
                 raise Exception(f"CodeBuild start failed: {str(e)}")
