@@ -34,16 +34,6 @@ resource "aws_codebuild_project" "main" {
       type  = "PLAINTEXT"
     }
     environment_variable {
-      name  = "AWS_ACCOUNT_ID"
-      value = data.aws_caller_identity.current.account_id
-      type  = "PLAINTEXT"
-    }
-    environment_variable {
-      name  = "AWS_DEFAULT_REGION" 
-      value = var.aws_region
-      type  = "PLAINTEXT"
-    }
-    environment_variable {
       name  = "ECR_REPO_URL"
       value = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.repo_name}-${var.user_github_id}"
       type  = "PLAINTEXT"
@@ -86,16 +76,6 @@ resource "aws_codebuild_project" "main" {
    
   }
 
-  // If you use webhooks, you might configure them here, or manage GitHub App integration
-  // webhook {
-  //   filter_group {
-  //     filter {
-  //       type    = "EVENT"
-  //       pattern = "PULL_REQUEST_CREATED, PULL_REQUEST_UPDATED, PUSH"
-  //     }
-  //   }
-  // }
-
   logs_config {
     cloudwatch_logs {
       group_name  = "/aws/codebuild/${var.user_github_id}-${var.repo_name}-codebuild"
@@ -129,4 +109,4 @@ resource "aws_codebuild_project" "main" {
     RepoName    = var.repo_name
     Owner       = var.owner
   }
-} 
+}

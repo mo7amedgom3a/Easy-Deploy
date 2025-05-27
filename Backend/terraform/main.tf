@@ -122,7 +122,7 @@ resource "aws_ecs_capacity_provider" "aws_ecs_capacity_provider" {
       maximum_scaling_step_size = 1000
       minimum_scaling_step_size = 1
       status                    = "ENABLED"
-      target_capacity           = 2
+      target_capacity           = 3
     }
 
   }
@@ -191,8 +191,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   network_mode       = "awsvpc"
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
-  cpu                = 256
-  memory             = 512
+  cpu                = 512
+  memory             = 1024
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
@@ -201,8 +201,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     {
       name      = var.aws_ecs_task_container_name
       image     = "${aws_ecr_repository.app_repo.repository_url}:latest"
-      cpu       = 256
-      memory    = 512
+      cpu       = 512
+      memory    = 1024
       essential = true
       portMappings = [
         {

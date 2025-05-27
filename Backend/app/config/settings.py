@@ -11,6 +11,7 @@ class Settings:
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
     REDIRECT_URI = os.getenv("REDIRECT_URI")
+    GITHUB_APP_ACCESS_TOKEN = os.getenv("GITHUB_APP_ACCESS_TOKEN") # ALLOW CREATE REPO FOR OUR APP 
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
     EXPIRATION_TIME = os.getenv("EXPIRATION_TIME")
