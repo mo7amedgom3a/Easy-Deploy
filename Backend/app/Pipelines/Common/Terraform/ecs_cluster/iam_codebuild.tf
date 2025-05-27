@@ -121,4 +121,14 @@ resource "aws_iam_role_policy_attachment" "codebuild_role_policy_attach" {
   policy_arn = aws_iam_policy.codebuild_policy.arn
 }
 
-data "aws_caller_identity" "current" {} 
+resource "aws_iam_role_policy_attachment" "efs_client_write_policy" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_power_user_policy" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+data "aws_caller_identity" "current" {}
