@@ -116,7 +116,7 @@ class DeployService:
             if not deploy or not deploy.absolute_path:
                 raise ValueError("Deploy record not found or missing absolute path")
             # get the absolute path of the deploy
-            tf_working_dir = os.path.join(str(deploy.absolute_path), "terraform", "ecs_cluster")
+            tf_working_dir = os.path.join(str(deploy.absolute_path))
             tf = Terraform(working_dir=tf_working_dir)
             tf.destroy(auto_approve=True, var={'github_owner': deploy.owner})
             return {"status": "success", "message": "Resources destroyed successfully"}
@@ -259,7 +259,7 @@ class DeployService:
             }
             tf_vars = {k: v for k, v in tf_vars.items() if v is not None}
 
-            tf_working_dir = os.path.join(deploy_data["absolute_path"], "terraform", "ecs_cluster")
+            tf_working_dir = os.path.join(deploy_data["absolute_path"])
             tf = Terraform(working_dir=tf_working_dir)
             
             # Run setup_backend.sh
@@ -308,7 +308,7 @@ class DeployService:
             source_branch_for_codebuild = getattr(deploy, 'branch_name', 'main')
 
             logger.info(f"Starting CodeBuild project: {codebuild_project_name}")
-            buildspec_file_path = os.path.join(deploy_data["absolute_path"],"ecs_cluster","buildspec.yml")
+            buildspec_file_path = os.path.join(deploy_data["absolute_path"],"buildspec.yml")
             buildspec_content = ""
             if os.path.exists(buildspec_file_path):
                 with open(buildspec_file_path, "r") as f:
