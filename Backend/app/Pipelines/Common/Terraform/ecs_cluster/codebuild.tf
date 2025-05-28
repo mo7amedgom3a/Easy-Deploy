@@ -89,8 +89,9 @@ resource "aws_codebuild_project" "main" {
 
   vpc_config {
     vpc_id             = var.vpc_id
-    subnets            = [var.private_subnet_id]
-    security_group_ids = [aws_security_group.codebuild_sg.id]
+    subnets            = [var.efs_mount_target_subnet1_id, var.efs_mount_target_subnet2_id]
+    security_group_ids = [var.efs_sg_id]
+    
   }
 
   file_system_locations {

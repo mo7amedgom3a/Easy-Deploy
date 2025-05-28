@@ -14,6 +14,15 @@ variable "private_subnet_id" {
   type        = string
   description = "Private Subnet ID"
 }
+# efs mount target subnet ids
+variable "efs_mount_target_subnet1_id" {
+  type        = string
+  description = "EFS Mount Target Subnet ID 1"
+}
+variable "efs_mount_target_subnet2_id" {
+  type        = string
+  description = "EFS Mount Target Subnet ID 2"
+}   
 variable "absolute_path" {
   type        = string
   description = "Absolute path to the buildspec.yml file"

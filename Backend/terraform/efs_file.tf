@@ -31,15 +31,17 @@ resource "aws_security_group" "efs_sg" {
   }
 }
 
+# Create EFS mount targets in each private subnet to allow EC2 instances to connect to the EFS filesystem
+# Mount target in private subnet 1
 resource "aws_efs_mount_target" "subnet1" {
-  file_system_id  = aws_efs_file_system.repo_storage.id
-  subnet_id       = aws_subnet.private_subnet1.id
-  security_groups = [aws_security_group.efs_sg.id]
+  file_system_id  = aws_efs_file_system.repo_storage.id  # Reference the EFS filesystem
+  subnet_id       = aws_subnet.private_subnet1.id        # Place mount target in first private subnet
+  security_groups = [aws_security_group.efs_sg.id]       # Apply EFS security group to allow NFS access
 }
 
+# Mount target in private subnet 2 for high availability
 resource "aws_efs_mount_target" "subnet2" {
-  file_system_id  = aws_efs_file_system.repo_storage.id
-  subnet_id       = aws_subnet.private_subnet2.id
-  security_groups = [aws_security_group.efs_sg.id]
-
+  file_system_id  = aws_efs_file_system.repo_storage.id  # Reference the same EFS filesystem
+  subnet_id       = aws_subnet.private_subnet2.id        # Place mount target in second private subnet  
+  security_groups = [aws_security_group.efs_sg.id]       # Apply same EFS security group
 }

@@ -30,4 +30,12 @@ output "public_subnet_id" {
 output "private_subnet_id" {
   value = aws_subnet.private_subnet_shared.id
 }
+output "efs_mount_target_subnet1_id" {
+  description = "EFS Mount Target Subnet ID 1"
+  value = aws_subnet.private_subnet1.id
+}
 
+output "efs_mount_target_subnet2_id" {
+  description = "EFS Mount Target Subnet ID 2"
+  value = aws_subnet.private_subnet2.id
+}
