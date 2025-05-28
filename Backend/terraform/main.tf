@@ -138,12 +138,14 @@ resource "aws_iam_role" "ecs_task_execution_role" {
       {
         Effect = "Allow",
         Principal = {
-          Service = "ecs-tasks.amazonaws.com"
+          Service = ["ecs-tasks.amazonaws.com", "ecs.amazonaws.com"]
         },
         Action = "sts:AssumeRole"
       }
     ]
   })
+
+
 }
 
 # Add inline policy for CodeBuild, ECR, and CloudWatch Logs permissions
@@ -190,8 +192,9 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   family             = var.ecs_task_family
   network_mode       = "awsvpc"
   task_role_arn      = aws_iam_role.ecs_task_execution_role.arn
-  execution_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecsTaskExecutionRole"
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   cpu                = 256
+  memory             = 512
   runtime_platform {
     operating_system_family = "LINUX"
     cpu_architecture        = "X86_64"
