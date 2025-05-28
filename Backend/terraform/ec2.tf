@@ -11,20 +11,12 @@ resource "aws_launch_template" "ecs_lt" {
   key_name     = aws_key_pair.deployer_key.key_name 
 
   image_id = data.aws_ssm_parameter.ecs_ami.value
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   
   
   vpc_security_group_ids = [aws_security_group.ecs_tasks_sg.id]
   iam_instance_profile {
     name = aws_iam_instance_profile.aws_ecs_instance_profile.name
-  }
-  block_device_mappings {
-    device_name = "/dev/xvda"
-    ebs {
-      volume_size = 30
-      volume_type = "gp2"
-      delete_on_termination = true
-    }
   }
 
   tag_specifications {
@@ -70,7 +62,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
   vpc_zone_identifier = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
   desired_capacity    = 2
   max_size            = 3
-  min_size            = 2
+  min_size            = 1
 
   launch_template {
     id      = aws_launch_template.ecs_lt.id
@@ -123,10 +115,6 @@ resource "aws_lb_target_group" "ecs_tg" {
 
   health_check {
     path                = "/"
-    interval            = 30
-    timeout             = 5
-    healthy_threshold  = 2
-    unhealthy_threshold = 2
   
   }
 }
