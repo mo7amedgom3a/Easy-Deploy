@@ -90,14 +90,14 @@ resource "aws_codebuild_project" "main" {
   vpc_config {
     vpc_id             = var.vpc_id
     subnets            = [var.efs_mount_target_subnet1_id, var.efs_mount_target_subnet2_id]
-    security_group_ids = [aws_security_group.codebuild_sg.id]
+    security_group_ids = [aws_security_group.codebuild_sg.id, var.efs_sg_id]
   }
 
   file_system_locations {
     type = "EFS"
     location = "${var.efs_id}.efs.${var.aws_region}.amazonaws.com:/"
     mount_point = "/mnt/repos"
-    identifier = "github-repo-efs"
+    identifier = "repo-efs"
     mount_options = "nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2"
   }
 

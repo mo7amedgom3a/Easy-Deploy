@@ -225,11 +225,21 @@ class DeployService:
 
             # Copy terraform files
             terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform", "ecs_cluster")
-            terraform_dest = os.path.join(deploy_data["absolute_path"])
+            terraform_dest = os.path.join(deploy_data["absolute_path"], "terraform")
             
-            if os.path.exists(terraform_dest):
-                shutil.rmtree(terraform_dest)
-            shutil.copytree(terraform_path, terraform_dest)
+            # Create terraform directory if it doesn't exist
+            os.makedirs(terraform_dest, exist_ok=True)
+            
+            # Copy terraform files to the terraform subdirectory
+            terraform_files = os.listdir(terraform_path)
+            for file in terraform_files:
+                source_path = os.path.join(terraform_path, file)
+                dest_path = os.path.join(terraform_dest, file)
+                
+                if os.path.isfile(source_path):
+                    shutil.copy(source_path, dest_path)
+                else:
+                    shutil.copytree(source_path, dest_path)
             
             # Create .env file
             env_path = os.path.join(deploy_data["absolute_path"], ".env")
@@ -270,11 +280,11 @@ class DeployService:
                 subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
                              cwd=tf_working_dir, capture_output=True, text=True, check=True)
 
-            logger.info("Applying Terraform configuration")
-            return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
-            if return_code != 0:
-                logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
-                raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
+            # logger.info("Applying Terraform configuration")
+            # return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
+            # if return_code != 0:
+            #     logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
+            #     raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
             
             logger.info("Getting Terraform output")
             output = tf.output(json=True)
