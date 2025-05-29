@@ -20,7 +20,7 @@ class GitRepositoryService:
     def __init__(self, git_repository: GitRepository):
         self.git_repository = git_repository
         # Read from environment variable with fallbacks
-        self.dir_base = "/tmp/mnt/repos"
+        self.dir_base = Settings.DIR_BASE or "/tmp/mnt/repos"
         self.base_url = "https://api.github.com"
         self.webhook_url = "https://monkfish-feasible-heavily.ngrok-free.app/git/repository/webhook/"
         
