@@ -272,20 +272,21 @@ class DeployService:
             tf_working_dir = os.path.join(deploy_data["absolute_path"])
             tf = Terraform(working_dir=tf_working_dir)
             
-            # Run setup_backend.sh
-            setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
-            if os.path.exists(setup_script_path):
-                logger.info("Running setup_backend.sh script")
-                os.chmod(setup_script_path, 0o755)
-                subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
-                             cwd=tf_working_dir, capture_output=True, text=True, check=True)
+            # # Run setup_backend.sh
+            # setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
+            # if os.path.exists(setup_script_path):
+            #     logger.info("Running setup_backend.sh script")
+            #     os.chmod(setup_script_path, 0o755)
+            #     subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
+            #                  cwd=tf_working_dir, capture_output=True, text=True, check=True)
 
             # logger.info("Applying Terraform configuration")
             # return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
             # if return_code != 0:
             #     logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
             #     raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
-            
+            logger.info("Initializing Terraform")
+            tf.init()
             logger.info("Getting Terraform output")
             output = tf.output(json=True)
             if not output:
