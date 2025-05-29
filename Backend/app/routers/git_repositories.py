@@ -101,7 +101,12 @@ async def github_webhook(
                     source_version=source_branch_for_codebuild,
                     buildspec_content=buildspec_content,
                     port=deploy.port,
-                    entry_point=deploy.app_entry_point
+                    entry_point=deploy.app_entry_point,
+                    image_tag="latest",
+                    github_username=deploy.owner,
+                    repo_name=deploy.repo_name,
+                    absolute_path=deploy.absolute_path
+
                 )
                 print(f"CodeBuild started: {build_response}")
 

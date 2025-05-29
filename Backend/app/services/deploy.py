@@ -116,7 +116,7 @@ class DeployService:
             if not deploy or not deploy.absolute_path:
                 raise ValueError("Deploy record not found or missing absolute path")
             # get the absolute path of the deploy
-            tf_working_dir = os.path.join(str(deploy.absolute_path))
+            tf_working_dir = os.path.join(str(deploy.absolute_path), "terraform")
             tf = Terraform(working_dir=tf_working_dir)
             tf.destroy(auto_approve=True, var={'github_owner': deploy.owner})
             return {"status": "success", "message": "Resources destroyed successfully"}
@@ -227,8 +227,12 @@ class DeployService:
             terraform_path = os.path.join(self.project_root, self.base_pipeline_path, "Common", "Terraform", "ecs_cluster")
             terraform_dest = os.path.join(deploy_data["absolute_path"], "terraform")
             
-            # Create terraform directory if it doesn't exist
-            os.makedirs(terraform_dest, exist_ok=True)
+            # Remove existing terraform directory if it exists
+            if os.path.exists(terraform_dest):
+                shutil.rmtree(terraform_dest)
+            
+            # Create terraform directory
+            os.makedirs(terraform_dest)
             
             # Copy terraform files to the terraform subdirectory
             terraform_files = os.listdir(terraform_path)
@@ -269,26 +273,26 @@ class DeployService:
             }
             tf_vars = {k: v for k, v in tf_vars.items() if v is not None}
 
-            tf_working_dir = os.path.join(deploy_data["absolute_path"])
+            tf_working_dir = os.path.join(deploy_data["absolute_path"], "terraform")
             tf = Terraform(working_dir=tf_working_dir)
-            
-            # # Run setup_backend.sh
-            # setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
-            # if os.path.exists(setup_script_path):
-            #     logger.info("Running setup_backend.sh script")
-            #     os.chmod(setup_script_path, 0o755)
-            #     subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
-            #                  cwd=tf_working_dir, capture_output=True, text=True, check=True)
+
+            # Run setup_backend.sh
+            setup_script_path = os.path.join(tf_working_dir, "setup_backend.sh")
+            if os.path.exists(setup_script_path):
+                logger.info("Running setup_backend.sh script")
+                os.chmod(setup_script_path, 0o755)
+                subprocess.run(["sh", setup_script_path, deploy_data["user_github_id"]], 
+                             cwd=tf_working_dir, capture_output=True, text=True, check=True)
 
             # logger.info("Applying Terraform configuration")
             # return_code, stdout, stderr = tf.apply(skip_plan=True, var=tf_vars, capture_output=False, auto_approve=True)
             # if return_code != 0:
             #     logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
             #     raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
-            logger.info("Initializing Terraform")
-            tf.init()
+
             logger.info("Getting Terraform output")
             output = tf.output(json=True)
+            logger.info(f"Terraform output: {output}")
             if not output:
                 logger.error("Terraform output is empty")
                 raise ValueError("Terraform output is empty")
@@ -309,7 +313,7 @@ class DeployService:
         except Exception as e:
             logger.error(f"Error initializing or applying Terraform: {str(e)}")
             raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
-        
+
         deploy_data["load_balancer_url"] = dns_load_balancer
         deploy_data["ecr_repo_url"] = ecr_repo_url
 

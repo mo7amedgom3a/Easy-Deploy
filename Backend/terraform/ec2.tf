@@ -61,12 +61,11 @@ resource "aws_ec2_instance_connect_endpoint" "ecs_instance_connect_endpoint" {
 resource "aws_autoscaling_group" "ecs_asg" {
   vpc_zone_identifier = [aws_subnet.private_subnet1.id, aws_subnet.private_subnet2.id]
   desired_capacity    = 2
-  max_size            = 3
+  max_size            = 2
   min_size            = 1
 
   launch_template {
     id      = aws_launch_template.ecs_lt.id
-    
     version = "$Latest"
   }
 

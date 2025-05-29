@@ -252,20 +252,29 @@ resource "aws_ecs_service" "ecs_service" {
     security_groups  = [aws_security_group.ecs_tasks_sg.id]
   }
 
-
   force_new_deployment = true
+
+  deployment_minimum_healthy_percent = 100
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+  triggers = {
+    redeployment = timestamp()
+  }
   placement_constraints {
     type = "distinctInstance"
   }
 
-  triggers = {
-   redeployment = timestamp()
- }
-    capacity_provider_strategy {
+
+
+
+  capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.aws_ecs_capacity_provider.name
     weight           = 100
   }
-    load_balancer {
+
+  load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     container_name   = var.aws_ecs_task_container_name
     container_port   = var.aws_ecs_task_container_port
@@ -273,7 +282,7 @@ resource "aws_ecs_service" "ecs_service" {
   
   depends_on = [
     aws_autoscaling_group.ecs_asg
-    ]
+  ]
 }
 
 
