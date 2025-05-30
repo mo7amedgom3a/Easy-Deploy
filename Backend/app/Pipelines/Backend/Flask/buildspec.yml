@@ -5,6 +5,7 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - cd $ABSOLUTE_PATH
+      - docker --version || echo "Docker not installed!"
       - echo "we inside the absolute path"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - REPOSITORY_URI=$ECR_REPO_URL
@@ -25,8 +26,13 @@ phases:
       - echo Pushing the Docker images...
       - docker push $ECR_REPO_URL:latest
       - echo Writing image definitions file...
+      - cd $CODEBUILD_SRC_DIR
       - printf '{"ImageURI":"%s"}' "$ECR_REPO_URL:$IMAGE_TAG" > imageDetail.json
       - cat imageDetail.json
+      - echo "Current directory for artifacts:"
+      - pwd
+      - echo "Listing files in current directory:"
+      - ls -la
       
 artifacts:
   files:

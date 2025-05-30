@@ -162,6 +162,7 @@ resource "aws_iam_role_policy" "ecs_task_codebuild_policy" {
           "codebuild:StartBuild",
           "codebuild:StopBuild",
           "codebuild:GetBuild",
+          
           "ecr:*",
           "logs:FilterLogEvents"
         ],

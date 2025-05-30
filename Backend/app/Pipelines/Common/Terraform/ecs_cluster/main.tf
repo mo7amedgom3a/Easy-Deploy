@@ -180,6 +180,10 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   force_new_deployment = true
+  deployment_circuit_breaker {
+    enable = true
+    rollback = true
+  }
   placement_constraints {
     type = "distinctInstance"
   }

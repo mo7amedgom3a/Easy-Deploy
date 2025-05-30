@@ -86,7 +86,6 @@ resource "aws_codebuild_project" "main" {
       # location = "${aws_s3_bucket.codebuild_artifacts.id}/build-logs"
     }
   }
-
   vpc_config {
     vpc_id             = var.vpc_id
     subnets            = [var.efs_mount_target_subnet1_id, var.efs_mount_target_subnet2_id]

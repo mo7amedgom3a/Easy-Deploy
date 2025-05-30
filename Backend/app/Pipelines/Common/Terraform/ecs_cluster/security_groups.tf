@@ -7,7 +7,7 @@ resource "aws_security_group" "codebuild_sg" {
     from_port   = 2049
     to_port     = 2049
     protocol    = "tcp"
-    security_groups = [var.efs_sg_id]
+    security_groups = [var.efs_sg_id, aws_security_group.eic_endpoint_sg.id]
     description = "Allow NFS access from EFS"
   }
 

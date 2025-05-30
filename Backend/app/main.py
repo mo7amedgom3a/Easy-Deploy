@@ -71,7 +71,7 @@ def root():
 # Routers that require authentication
 app.include_router(user.router, dependencies=[Depends(oauth2_scheme)])
 app.include_router(aws_user.router, dependencies=[Depends(oauth2_scheme)])
-app.include_router(monitoring.router, dependencies=[Depends(oauth2_scheme)])
+# app.include_router(monitoring.router, dependencies=[Depends(oauth2_scheme)])
 
 # Routers that do not require authentication
 app.include_router(auth.router)

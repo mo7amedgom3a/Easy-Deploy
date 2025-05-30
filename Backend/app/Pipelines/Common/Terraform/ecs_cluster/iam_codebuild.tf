@@ -69,13 +69,8 @@ resource "aws_iam_policy" "codebuild_policy" {
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetRepositoryPolicy",
           "ecr:DescribeRepositories",
-          "ecr:ListImages"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = [
+          "ecr:ListImages",
+          "ecr:DescribeImages",
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:GetRepositoryPolicy",
@@ -86,9 +81,19 @@ resource "aws_iam_policy" "codebuild_policy" {
           "ecr:InitiateLayerUpload",
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload",
-          "ecr:PutImage"
+          "ecr:PutImage",
+          "ecr:GetLoginPassword",
+          "ecr:CreateRepository",
+          "ecr:TagResource",
+          "ecr:UntagResource",
+          "ecr:DeleteRepository",
+          "ecr:SetRepositoryPolicy",
+          "ecr:DeleteRepositoryPolicy"
         ],
-        Resource = "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/*"
+        Resource = [
+          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/*",
+          "*"
+        ]
       },
       {
         Effect = "Allow",
