@@ -5,11 +5,13 @@ from repositories.git_repository import GitRepository
 from repositories.aws_user import AWSUserRepository
 from repositories.deploy import DeployRepository
 from services.deploy import DeployService
+from services.monitoring import MonitoringService
 from services.aws_user import AWSUserService
 from dependencies.user import get_user
 from dependencies.git_repository import get_git_repository
 from dependencies.aws_user import get_aws_user_repository
 from dependencies.deploy import get_deploy_repository
+
 
 from dependencies.user import get_user
 from repositories.user import User
@@ -43,3 +45,10 @@ async def get_aws_codebuild(
     
 ) -> AWSCodeBuild:
     return AWSCodeBuild()
+
+
+async def get_monitoring_service(
+    
+) -> MonitoringService:
+    return MonitoringService()
+

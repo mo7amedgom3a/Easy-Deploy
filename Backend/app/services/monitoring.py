@@ -32,9 +32,23 @@ class MonitoringService:
                 start_time,
                 end_time
             ),
-            'network_bytes': self._get_metric_statistics(
+            'network_in': self._get_metric_statistics(
                 'AWS/ECS',
                 'NetworkRxBytes',
+                cluster_name,
+                start_time,
+                end_time
+            ),
+            'network_out': self._get_metric_statistics(
+                'AWS/ECS',
+                'NetworkTxBytes',
+                cluster_name,
+                start_time,
+                end_time
+            ),
+            'request_count': self._get_metric_statistics(
+                'AWS/ECS',
+                'RequestCount',
                 cluster_name,
                 start_time,
                 end_time
@@ -67,9 +81,25 @@ class MonitoringService:
                 end_time,
                 dimensions=[{'Name': 'ServiceName', 'Value': service_name}]
             ),
-            'network_bytes': self._get_metric_statistics(
+            'network_in': self._get_metric_statistics(
                 'AWS/ECS',
                 'NetworkRxBytes',
+                cluster_name,
+                start_time,
+                end_time,
+                dimensions=[{'Name': 'ServiceName', 'Value': service_name}]
+            ),
+            'network_out': self._get_metric_statistics(
+                'AWS/ECS',
+                'NetworkTxBytes',
+                cluster_name,
+                start_time,
+                end_time,
+                dimensions=[{'Name': 'ServiceName', 'Value': service_name}]
+            ),
+            'request_count': self._get_metric_statistics(
+                'AWS/ECS',
+                'RequestCount',
                 cluster_name,
                 start_time,
                 end_time,
@@ -111,9 +141,25 @@ class MonitoringService:
                 end_time,
                 dimensions=[{'Name': 'TaskId', 'Value': task_id}]
             ),
-            'network_bytes': self._get_metric_statistics(
+            'network_in': self._get_metric_statistics(
                 'AWS/ECS',
                 'NetworkRxBytes',
+                cluster_name,
+                start_time,
+                end_time,
+                dimensions=[{'Name': 'TaskId', 'Value': task_id}]
+            ),
+            'network_out': self._get_metric_statistics(
+                'AWS/ECS',
+                'NetworkTxBytes',
+                cluster_name,
+                start_time,
+                end_time,
+                dimensions=[{'Name': 'TaskId', 'Value': task_id}]
+            ),
+            'request_count': self._get_metric_statistics(
+                'AWS/ECS',
+                'RequestCount',
                 cluster_name,
                 start_time,
                 end_time,

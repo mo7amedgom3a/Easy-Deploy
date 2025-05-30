@@ -69,16 +69,19 @@ async def github_webhook(
                 return {"status": "error", "message": result["error"]}
             
             # Get deploy data
-            deploy = await deploy_service.get_deploy(repo_name, owner)
-            if deploy:
+            deploys = await deploy_service.get_deploys(owner, repo_name)
+            if deploys:
+                # Get the latest deploy
+                latest_deploy = deploys[0]  # Assuming deploys are ordered by creation date desc
+                
                 # Start CodeBuild process
-                codebuild_project_name = f"{deploy.user_github_id}-{deploy.repo_name}-codebuild"
-                source_branch_for_codebuild = getattr(deploy, 'branch', 'main')
+                codebuild_project_name = f"{latest_deploy.user_github_id}-{latest_deploy.repo_name}-codebuild"
+                source_branch_for_codebuild = getattr(latest_deploy, 'branch', 'main')
 
                 # Read buildspec content
-                if not deploy.absolute_path:
+                if not latest_deploy.absolute_path:
                     raise HTTPException(status_code=400, detail="Repository path is required")
-                buildspec_file_path = os.path.join(deploy.absolute_path, "buildspec.yml")
+                buildspec_file_path = os.path.join(latest_deploy.absolute_path, "buildspec.yml")
                 buildspec_content = ""
                 if os.path.exists(buildspec_file_path):
                     with open(buildspec_file_path, "r") as f:
@@ -87,26 +90,25 @@ async def github_webhook(
                     logger.warning(f"buildspec.yml not found at {buildspec_file_path}. CodeBuild might use project default.")
 
                 # Validate required deploy parameters
-                if not deploy.ecr_repo_url:
+                if not latest_deploy.ecr_repo_url:
                     raise HTTPException(status_code=400, detail="ECR repository URL is required")
-                if not deploy.port:
+                if not latest_deploy.port:
                     raise HTTPException(status_code=400, detail="Port is required")
-                if not deploy.app_entry_point:
+                if not latest_deploy.app_entry_point:
                     raise HTTPException(status_code=400, detail="App entry point is required")
 
-                logger.info(f"Starting CodeBuild project: {codebuild_project_name} for ECR repo: {deploy.ecr_repo_url} on branch {source_branch_for_codebuild}")
+                logger.info(f"Starting CodeBuild project: {codebuild_project_name} for ECR repo: {latest_deploy.ecr_repo_url} on branch {source_branch_for_codebuild}")
                 build_response = aws_codebuild.start_build(
                     project_name=codebuild_project_name,
-                    ecr_repo_url=deploy.ecr_repo_url,
+                    ecr_repo_url=latest_deploy.ecr_repo_url,
                     source_version=source_branch_for_codebuild,
                     buildspec_content=buildspec_content,
-                    port=deploy.port,
-                    entry_point=deploy.app_entry_point,
+                    port=latest_deploy.port,
+                    entry_point=latest_deploy.app_entry_point,
                     image_tag="latest",
-                    github_username=deploy.owner,
-                    repo_name=deploy.repo_name,
-                    absolute_path=deploy.absolute_path
-
+                    github_username=latest_deploy.owner,
+                    repo_name=latest_deploy.repo_name,
+                    absolute_path=latest_deploy.absolute_path
                 )
                 print(f"CodeBuild started: {build_response}")
 
