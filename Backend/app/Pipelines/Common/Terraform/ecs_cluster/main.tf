@@ -180,10 +180,7 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   force_new_deployment = true
-  deployment_circuit_breaker {
-    enable = true
-    rollback = true
-  }
+  
   placement_constraints {
     type = "distinctInstance"
   }
@@ -198,8 +195,6 @@ resource "aws_ecs_service" "ecs_service" {
     container_port   = var.ecs_task_container_port
   }
   depends_on = [
-    aws_lb_listener.ecs_nlb_listener,
-    aws_lb_target_group.ecs_tg,
-    aws_ecs_capacity_provider.ecs_capacity_provider
+    aws_autoscaling_group.ecs_asg
   ]
 }

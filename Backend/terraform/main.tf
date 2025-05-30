@@ -160,13 +160,30 @@ resource "aws_iam_role_policy" "ecs_task_codebuild_policy" {
         Effect = "Allow",
         Action = [
           "codebuild:StartBuild",
-          "codebuild:StopBuild",
+          "codebuild:StopBuild", 
           "codebuild:GetBuild",
           
           "ecr:*",
           "logs:FilterLogEvents"
         ],
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:CreateNetworkInterface",
+          "ec2:DeleteNetworkInterface",
+          "ec2:DescribeVpcs"
+        ],
+        Resource = "*",
+        Condition = {
+          StringEquals = {
+            "ec2:AuthorizedService": "codebuild.amazonaws.com"
+          }
+        }
       }
     ]
   })

@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "codebuild_artifacts" {
   bucket = "${var.user_github_id}-${var.repo_name}-codebuild-artifacts-${data.aws_caller_identity.current.account_id}" // Unique bucket name
-
+  force_destroy = true
   tags = {
     Name        = "${var.user_github_id}-${var.repo_name}-codebuild-artifacts"
     Environment = "dev"

@@ -56,7 +56,47 @@ resource "aws_iam_policy" "codebuild_policy" {
           "ec2:AttachNetworkInterface",
           "ec2:DetachNetworkInterface",
           "ec2:AssignPrivateIpAddresses",
-          "ec2:UnassignPrivateIpAddresses"
+          "ec2:UnassignPrivateIpAddresses",
+          "ec2:DescribeDhcpOptions",
+          "ec2:DescribeVpcAttribute",
+          "ec2:DescribeVpcClassicLink",
+          "ec2:DescribeVpcClassicLinkDnsSupport",
+          "ec2:DescribeVpcPeeringConnections",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeVpcEndpointServices",
+          "ec2:DescribeVpcEndpointConnections",
+          "ec2:DescribeVpcEndpointServiceConfigurations",
+          "ec2:DescribeVpcEndpointServicePermissions",
+          "ec2:DescribeVpcEndpointConnections",
+          "ec2:DescribeVpcEndpointServiceConfigurations",
+          "ec2:DescribeVpcEndpointServicePermissions",
+          "ec2:DescribeVpcEndpointServices",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeVpcPeeringConnections",
+          "ec2:DescribeVpcClassicLinkDnsSupport",
+          "ec2:DescribeVpcClassicLink",
+          "ec2:DescribeVpcAttribute",
+          "ec2:DescribeDhcpOptions"
+        ],
+        Resource = "*",
+        Condition = {
+          StringEquals = {
+            "ec2:AuthorizedService": "codebuild.amazonaws.com"
+          }
+        }
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeNetworkInterfaceAttribute"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:*"
         ],
         Resource = "*"
       },
@@ -64,36 +104,9 @@ resource "aws_iam_policy" "codebuild_policy" {
         Effect = "Allow",
         Action = [
           "ecr:GetAuthorizationToken",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetRepositoryPolicy",
-          "ecr:DescribeRepositories",
-          "ecr:ListImages",
-          "ecr:DescribeImages",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:GetRepositoryPolicy",
-          "ecr:DescribeRepositories",
-          "ecr:ListImages",
-          "ecr:DescribeImages",
-          "ecr:BatchGetImage",
-          "ecr:InitiateLayerUpload",
-          "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload",
-          "ecr:PutImage",
-          "ecr:GetLoginPassword",
-          "ecr:CreateRepository",
-          "ecr:TagResource",
-          "ecr:UntagResource",
-          "ecr:DeleteRepository",
-          "ecr:SetRepositoryPolicy",
-          "ecr:DeleteRepositoryPolicy"
+          "ecr:GetLoginPassword"
         ],
-        Resource = [
-          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/*",
-          "*"
-        ]
+        Resource = "*"
       },
       {
         Effect = "Allow",
@@ -133,6 +146,16 @@ resource "aws_iam_policy" "codebuild_policy" {
 resource "aws_iam_role_policy_attachment" "codebuild_role_policy_attach" {
   role       = aws_iam_role.codebuild_role.name
   policy_arn = aws_iam_policy.codebuild_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "codebuild_admin_policy" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "ecr_full_access" {
+  role       = aws_iam_role.codebuild_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "efs_client_write_policy" {
