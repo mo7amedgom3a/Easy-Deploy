@@ -80,6 +80,7 @@ async def github_callback(
     # Return the token and state in the response
     response_data = {
         "jwt_token": token,
+        "token": token,
         "user": {
            
             "login": user.login,

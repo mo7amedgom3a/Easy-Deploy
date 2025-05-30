@@ -12,7 +12,7 @@ from services.aws_user import AWSUserService
 
 oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter(prefix="/deploy", tags=["deploy"], dependencies=[Depends(get_current_user)])
-@router.post("/", response_model=DeploySchema)
+@router.post("/", response_model=Deploy)
 async def create_deploy(
     deploy: DeployCreateSchema,
     user: UserSchema = Depends(get_current_user),
@@ -45,16 +45,48 @@ def get_frameworks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/{owner}/{repo_name}")
-async def delete_deploy(
+@router.get("/repository/{owner}/{repo_name}")
+async def get_deploys(
     owner: str,
     repo_name: str,
     deploy_service: DeployService = Depends(get_deploy_service)
-) -> Dict:
+) -> List[Deploy]:
     """
-    destroy terraform resources for repo
+    Get deploy records for a specific repository.
     """
     try:
-        return await deploy_service.destroy_terraform_resources(owner, repo_name)
+        return await deploy_service.get_deploys(owner, repo_name)
     except HTTPException as http_ex:
         raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/owner/{owner}")
+async def get_deploys_for_owner(
+    owner: str,
+    deploy_service: DeployService = Depends(get_deploy_service)
+) -> List[Deploy]:
+    """
+    Get a list of all the deploys for a given owner.
+    """
+    try:
+        return await deploy_service.get_deploys_for_owner(owner)
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/statistics/{owner}")
+async def get_deploy_statistics(
+    owner: str,
+    deploy_service: DeployService = Depends(get_deploy_service)
+) -> Dict:
+    """
+    Get the deployment statistics.
+    """
+    try:
+        return await deploy_service.get_deploy_statistics(owner)
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

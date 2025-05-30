@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 from datetime import datetime
-
+from bson import ObjectId
 class Deploy(BaseModel):
-    user_github_id: str
-    repo_name:str
-    owner: str
-    branch: str
+    user_github_id: Optional[str] = None
+    repo_name: Optional[str] = None
+    owner: Optional[str] = None
+    branch: Optional[str] = None
     pipeline_path: Optional[str] = None  # path to the pipeline file
     framework: Optional[str] = None  # e.g., "flask", "django", etc.
     root_folder_path: Optional[str] = None

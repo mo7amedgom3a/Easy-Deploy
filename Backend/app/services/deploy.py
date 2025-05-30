@@ -18,7 +18,7 @@ from schemas.user_schema import UserSchema
 from services.aws_user import AWSUserService
 from services.git_repository import GitRepositoryService
 from services.aws_codebuild import AWSCodeBuild
-
+from typing import List
 logger = logging.getLogger('deploy')
 
 class DeployService:
@@ -97,28 +97,28 @@ class DeployService:
             raise ValueError("Invalid user ID")
         return await self.aws_user_service.get_user_by_id(user_id)
 
-    async def get_deploy(self, repo_name: str, owner: str) -> Deploy:
+    async def get_deploys(self, owner: str, repo_name: str) -> List[Deploy]:
         """Fetch a deployment record from the repository."""
-        if not repo_name or not isinstance(repo_name, str):
-            raise ValueError("Invalid repo name")
-        if not owner or not isinstance(owner, str):
-            raise ValueError("Invalid owner")
-        deploy = await self.deploy_repository.get_deploy(repo_name, owner)
-        if not deploy:
-            raise ValueError(f"Deployment not found for {owner}/{repo_name}")
-        return deploy
+        return await self.deploy_repository.get_deploys(owner, repo_name)
     
+    async def get_deploys_for_owner(self, owner: str) -> List[Deploy]:
+        """Fetch all deployment records for a given owner."""
+      
+        return await self.deploy_repository.get_deploys_for_owner(owner)
+    async def get_deploy_statistics(self, owner: str) -> Dict:
+        """Fetch deployment statistics from the repository."""
+        return await self.deploy_repository.get_deployment_statistics(owner)
     async def destroy_terraform_resources(self, owner: str, repo_name: str) -> Dict[str, str]:
         """Destroy Terraform resources for a given repository."""
         try:
             # Get the deploy record
-            deploy = await self.get_deploy(repo_name, owner)
-            if not deploy or not deploy.absolute_path:
+            deploys = await self.get_deploys(owner, repo_name)
+            if not deploys or not deploys[0].absolute_path:
                 raise ValueError("Deploy record not found or missing absolute path")
             # get the absolute path of the deploy
-            tf_working_dir = os.path.join(str(deploy.absolute_path), "terraform")
+            tf_working_dir = os.path.join(str(deploys[0].absolute_path), "terraform")
             tf = Terraform(working_dir=tf_working_dir)
-            tf.destroy(auto_approve=True, var={'github_owner': deploy.owner})
+            tf.destroy(auto_approve=True, var={'github_owner': deploys[0].owner})
             return {"status": "success", "message": "Resources destroyed successfully"}
         except Exception as e:
             raise ValueError(f"Error destroying Terraform resources: {str(e)}")
@@ -353,4 +353,5 @@ class DeployService:
             deploy_data["image_tag"] = deployment_tag  # Still store the tag even if build fails
 
         logger.info(f"Creating deployment record for {deploy.owner}/{deploy.repo_name}")
+
         return await self.deploy_repository.create_deploy(deploy_data)
