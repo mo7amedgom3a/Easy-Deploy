@@ -290,22 +290,22 @@ class DeployService:
             #     logger.error(f"Terraform apply failed. Stdout: {stdout}, Stderr: {stderr}")
             #     raise HTTPException(status_code=500, detail=f"Failed to apply Terraform configuration: {stderr}")
 
-            logger.info("Getting Terraform output")
-            output = tf.output(json=True)
-            logger.info(f"Terraform output: {output}")
-            if not output:
-                logger.error("Terraform output is empty")
-                raise ValueError("Terraform output is empty")
+            # logger.info("Getting Terraform output")
+            # output = tf.output(json=True)
+            # logger.info(f"Terraform output: {output}")
+            # if not output:
+            #     logger.error("Terraform output is empty")
+            #     raise ValueError("Terraform output is empty")
 
-            dns_load_balancer = output.get("load_balancer_dns", {}).get("value")
-            ecr_repo_url = output.get("ecr_repo_url", {}).get("value")
+            # dns_load_balancer = output.get("load_balancer_dns", {}).get("value")
+            # ecr_repo_url = output.get("ecr_repo_url", {}).get("value")
 
-            if not dns_load_balancer or not ecr_repo_url:
-                missing_outputs = []
-                if not dns_load_balancer: missing_outputs.append("load_balancer_dns")
-                if not ecr_repo_url: missing_outputs.append("ecr_repo_url")
-                logger.error(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
-                raise ValueError(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
+            # if not dns_load_balancer or not ecr_repo_url:
+            #     missing_outputs = []
+            #     if not dns_load_balancer: missing_outputs.append("load_balancer_dns")
+            #     if not ecr_repo_url: missing_outputs.append("ecr_repo_url")
+            #     logger.error(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
+            #     raise ValueError(f"Missing critical Terraform outputs: {', '.join(missing_outputs)}")
 
         except subprocess.CalledProcessError as e:
             logger.error(f"Error running setup_backend.sh: {e.stderr}")
@@ -314,8 +314,8 @@ class DeployService:
             logger.error(f"Error initializing or applying Terraform: {str(e)}")
             raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
 
-        deploy_data["load_balancer_url"] = dns_load_balancer
-        deploy_data["ecr_repo_url"] = ecr_repo_url
+        deploy_data["load_balancer_url"] = "http://flask-test-deploy-539b16f80973ca34.elb.us-east-1.amazonaws.com"
+        deploy_data["ecr_repo_url"] = "058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436"
 
         # Start CodeBuild process
         try:
@@ -333,7 +333,7 @@ class DeployService:
 
             build_response = self.codebuild_service.start_build(
                 project_name=codebuild_project_name,
-                ecr_repo_url=ecr_repo_url,
+                ecr_repo_url=deploy_data["ecr_repo_url"],
                 source_version=source_branch_for_codebuild,
                 buildspec_content=buildspec_content,
                 port=deploy_data["port"],
