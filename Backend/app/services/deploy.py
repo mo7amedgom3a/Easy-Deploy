@@ -314,7 +314,7 @@ class DeployService:
             logger.error(f"Error initializing or applying Terraform: {str(e)}")
             raise ValueError(f"Error initializing or applying Terraform: {str(e)}")
 
-        deploy_data["load_balancer_url"] = "http://flask-test-deploy-539b16f80973ca34.elb.us-east-1.amazonaws.com"
+        deploy_data["load_balancer_url"] = "http://flask-test-deploy-39262c6833e2120f.elb.us-east-1.amazonaws.com"
         deploy_data["ecr_repo_url"] = "058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436"
 
         # Start CodeBuild process
