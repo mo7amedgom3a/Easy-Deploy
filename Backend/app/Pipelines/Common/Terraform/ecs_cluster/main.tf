@@ -188,7 +188,7 @@ resource "aws_ecs_service" "ecs_service" {
   triggers = {
     redeployment = timestamp()
   }
-
+  
   load_balancer {
     target_group_arn = aws_lb_target_group.ecs_tg.arn
     container_name   = var.aws_ecs_task_container_name

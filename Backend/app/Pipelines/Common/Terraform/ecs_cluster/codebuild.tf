@@ -73,7 +73,6 @@ resource "aws_codebuild_project" "main" {
   source {
     type            = "NO_SOURCE"
     buildspec       = file("buildspec.yml")
-   
   }
 
   logs_config {

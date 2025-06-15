@@ -4,36 +4,42 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - cd $ABSOLUTE_PATH
-      - docker --version || echo "Docker not installed!"
-      - echo "we inside the absolute path"
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPOSITORY_URI=$ECR_REPO_URL
-      - IMAGE_TAG=latest
-      - echo "Current directory:"
+      - echo "Current directory before cd:"
       - pwd
       - echo "Listing files in current directory:"
       - ls -la
-      - echo "Listing files in EFS mount:"
-      - ls -la $ABSOLUTE_PATH
+      - echo "Checking EFS mount point:"
+      - ls -la /mnt/repos
+      - cd /mnt/repos/Adelkazzaz/flask-test-deploy
+      - echo "Current directory after cd:"
+      - pwd
+      - echo "Listing files in repository directory:"
+      - ls -la
+      - docker --version || echo "Docker not installed!"
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 058264170818.dkr.ecr.us-east-1.amazonaws.com
+      - REPOSITORY_URI=058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436
+      - IMAGE_TAG=latest
   build:
     commands:
       - echo Building the Docker image...
-      - docker build -t $ECR_REPO_URL:$IMAGE_TAG --build-arg PORT=$PORT --build-arg ENTRY_POINT=$ENTRY_POINT -f Dockerfile .
-      - docker tag $ECR_REPO_URL:$IMAGE_TAG $ECR_REPO_URL:$IMAGE_TAG
+      - echo "Current directory for build:"
+      - pwd
+      - echo "Listing files in current directory:"
+      - ls -la
+      - docker build -t 058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436:latest --build-arg PORT=$PORT --build-arg ENTRY_POINT=$ENTRY_POINT -f Dockerfile .
+      - docker tag 058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436:latest 058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436:latest
   post_build:
     commands:
       - echo Pushing the Docker images...
-      - docker push $ECR_REPO_URL:latest
+      - docker push 058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436:latest
       - echo Writing image definitions file...
       - cd $CODEBUILD_SRC_DIR
-      - printf '{"ImageURI":"%s"}' "$ECR_REPO_URL:$IMAGE_TAG" > imageDetail.json
+      - printf '{"ImageURI":"%s"}' "058264170818.dkr.ecr.us-east-1.amazonaws.com/flask-test-deploy-119636436:latest" > imageDetail.json
       - cat imageDetail.json
       - echo "Current directory for artifacts:"
       - pwd
       - echo "Listing files in current directory:"
-      - ls -la
-      
+      - ls -la      
 artifacts:
   files:
     - imageDetail.json
